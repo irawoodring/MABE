@@ -9,3 +9,8 @@ objectFiles/
 
 # Ignore python's cache:
 __pycache__/
+.python-version
+*.csv
+mabe
+out
+makefile
