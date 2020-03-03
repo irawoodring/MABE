@@ -336,3 +336,4 @@ Organism::makeCopy(std::shared_ptr<ParametersTable> PT_) {
   newOrg->alive = alive;
   return newOrg;
 }
+

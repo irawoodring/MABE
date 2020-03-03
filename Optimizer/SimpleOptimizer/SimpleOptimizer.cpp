@@ -128,7 +128,7 @@ SimpleOptimizer::SimpleOptimizer(std::shared_ptr<ParametersTable> PT_)
 	}
 
 	popFileColumns.clear();
-	popFileColumns.push_back("optimizeValue");
+	//popFileColumns.push_back("optimizeValue");
 }
 
 void SimpleOptimizer::optimize(std::vector<std::shared_ptr<Organism>> &population) {

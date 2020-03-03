@@ -1,7 +1,4 @@
-
-
 #include "HHPWorld.h"
-
 //#include "../../Utilities/bitmap_image.hpp"
 
 std::shared_ptr < ParameterLink<int>> HHPWorld::worldXPL =
@@ -10,99 +7,55 @@ Parameters::register_parameter("WORLD_HHP-worldX", 5,
 std::shared_ptr < ParameterLink<int>> HHPWorld::worldYPL =
 Parameters::register_parameter("WORLD_HHP-worldY", 5,
 		"size in Y of world");
-
 std::shared_ptr < ParameterLink<int>> HHPWorld::recordImageStepPL =
 Parameters::register_parameter("WORLD_HHP_IO-recordImageStep", -1,
 		"record world images when update % recordImageStep == 0, if -1, do not record images.");
-
 std::shared_ptr < ParameterLink<int>> HHPWorld::recordWorldStateStepPL =
 Parameters::register_parameter("WORLD_HHP_IO-recordWorldStateStep", -1,
 		"record world state csv when update % recordWorldStateStep == 0, if -1, do not record status.");
-
 std::shared_ptr < ParameterLink<bool>> HHPWorld::worldWrapsPL =
 Parameters::register_parameter("WORLD_HHP-worldWraps", true,
 		"does the world wrap?");
-
-/*
-   void HHPWorld::saveWorldImage() {
-   double cX = 1000;
-   double cY = 1000;
-
-   cartesian_canvas canvas(cX,cY);
-
-   canvas.pen_color(0, 0, 0);
-   canvas.fill_rectangle(-1 * (cX / 2), -1 * (cY / 2), cX/2, cY/2);
-
-   double multiCellWidth = (cX / worldX);
-   double multiCellHeight = (cY / worldY);
-
-   double cellWidth = (multiCellWidth / multiCellX);
-   double cellHeight = (multiCellHeight / multiCellY);
-
-   double x1, x2, y1, y2;
-   double multiCellX1, multiCellY1;
-   for (int wY = 0; wY < worldY; wY++) {
-   for (int wX = 0; wX < worldX; wX++) {
-   if (!world(wX, wY).empty) {
-   x1 = (wX * multiCellWidth) - (cX / 2);
-   y1 = (wY * multiCellHeight) - (cY / 2);
-   x2 = x1 + multiCellWidth;
-   y2 = y1 + multiCellHeight;
-
-   canvas.pen_color(255, 255, 255);
-   canvas.fill_rectangle(x1,y1,x2,y2);
-//std::cout << "draw multi cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
-multiCellX1 = wX * multiCellWidth;
-multiCellY1 = wY * multiCellHeight;
-
-for (int y = 0; y < multiCellY; y++) {
-for (int x = 0; x < multiCellX; x++){
-if (!world(wX, wY).cells(x, y).empty) {
-x1 = multiCellX1 + x * cellWidth - (cX / 2);
-y1 = multiCellY1 + y * cellHeight - (cY / 2);
-x2 = x1 + cellWidth;
-y2 = y1 + cellHeight;
-if (world(wX, wY).cells(x, y).evil) {
-canvas.pen_color(255, 0, 0);
-}
-else if (world(wX, wY).cells(x, y).murder) {
-canvas.pen_color(125, 0, 0);
-}
-else if (world(wX, wY).cells(x, y).first) {
-canvas.pen_color(0, 0, 255);
-}
-else {
-canvas.pen_color(0, 255, 0);
-}
-canvas.fill_rectangle(x1, y1, x2, y2);
-//std::cout << "  draw cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
-
-}
-}
-}
-}
-}
-}
-
-// add a grid
-canvas.pen_color(0, 0, 0);
-double pos = -1 * (cX / 2);
-while (pos < (cX / 2)) {
-canvas.fill_rectangle(pos-1, -1 * (cY / 2), pos, (cY / 2));
-pos += multiCellWidth;
-}
-pos = -1 * (cY / 2);
-while (pos < (cY / 2)) {
-canvas.fill_rectangle(-1 * (cX / 2), pos-1, (cX / 2), pos);
-pos += multiCellHeight;
-}
-canvas.image().save_image("output_"+std::to_string(100000+Global::update)+".bmp");
-}
-*/
+std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointCatPL = 
+Parameters::register_parameter("WORLD_HHP-mutationPointCat", .05,
+		"the point flip per site mutation rate");
+std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeCatPL = 
+Parameters::register_parameter("WORLD_HHP-mutationSizeCat", .001,
+		"the insertion/deletion per site mutation rate");
+std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointDogPL =
+Parameters::register_parameter("WORLD_HHP-mutationPointDog", .05,
+		"the point flip per site mutation rate");
+std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeDogPL =
+Parameters::register_parameter("WORLD_HHP-mutationSizeDog", .001,
+		"the point insertion/deletion per site mutation rate");
+std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointFleaPL =
+Parameters::register_parameter("WORLD_HHP-mutationPointFlea", .05,
+		"the point flip per site mutation rate");
+std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeFleaPL =
+Parameters::register_parameter("WORLD_HHP-mutationSizeFlea", 0.001,
+		"the point insertion/deletion per site mutation rate");
+std::shared_ptr < ParameterLink<int>> HHPWorld::reproductionThresholdCatPL =
+Parameters::register_parameter("WORLD_HHP-reproductionThresholdCat", 10,
+		"required resources for a cat to reproduce");
+std::shared_ptr < ParameterLink<int>> HHPWorld::reproductionThresholdDogPL =
+Parameters::register_parameter("WORLD_HHP-reproductionThresholdDog", 10,
+		"required resources for a dog to reproduce");
+std::shared_ptr < ParameterLink<int>> HHPWorld::reproductionThresholdFleaPL =
+Parameters::register_parameter("WORLD_HHP-reproductionThresholdFlea", 2,
+		"required resources for a flea to reproduce");
 
 HHPWorld::HHPWorld(std::shared_ptr<ParametersTable> PT_)
 	: AbstractWorld(PT_) {
 
+		mutationPointCat = mutationPointCatPL->get(PT);
+		mutationSizeCat = mutationSizeCatPL->get(PT);
+		mutationPointDog = mutationPointDogPL->get(PT);
+		mutationSizeDog = mutationSizeDogPL->get(PT);
+		mutationPointFlea = mutationPointFleaPL->get(PT);
+		mutationSizeFlea = mutationSizeFleaPL->get(PT);
+		reproductionThresholdCat = reproductionThresholdCatPL->get(PT);
+		reproductionThresholdDog = reproductionThresholdDogPL->get(PT);
+		reproductionThresholdFlea = reproductionThresholdFleaPL->get(PT);
 
 		std::cout << "in HHPWorld constructor :: " << std::endl;
 
@@ -128,11 +81,11 @@ HHPWorld::HHPWorld(std::shared_ptr<ParametersTable> PT_)
 // create a Cat. cat will be added to cats and world.
 // if x, y, direction are not provided, cat will be placed randomly in world
 // genome will be randomized if initGenome = true (default)
-void HHPWorld::createCat(std::shared_ptr<Organism>& org, int x, int y, int direction, bool initGenome) {
+std::shared_ptr<HHPWorld::Host> HHPWorld::createCat(std::shared_ptr<Organism>& org, int x, int y, int direction, bool initGenome) {
 	//randomize genome
-	if (initGenome) {
-		org->genomes["cat::"]->fillRandom();
-	}
+	//if (initGenome) {
+	//	org->genomes["cat::"]->fillRandom();
+	//}
 	if (x == -1) {
 		x = Random::getIndex(worldX);
 	}
@@ -144,12 +97,16 @@ void HHPWorld::createCat(std::shared_ptr<Organism>& org, int x, int y, int direc
 	}
 	// make a cat and place this in world
 	auto newCat = std::make_shared<Host>(org, HostTag::catTag, x, y, direction);
-	newCat->bitstring = std::vector<bool>(Random::getInt(1,10));
-	for(int i=0; i<newCat->bitstring.size(); ++i){
-		newCat->bitstring[i] = Random::getInt(1);
-	}
+	if(initGenome){
+		newCat->bitstring = std::vector<bool>(Random::getInt(1,3));
+		for(int i=0; i<newCat->bitstring.size(); ++i){
+			newCat->bitstring[i] = Random::getInt(1);
+		}
+	} 
+
 	cats.push_back(newCat);
 	world(newCat->x, newCat->y).hosts.push_back(newCat);
+	return newCat;
 }
 
 // create a Dog. dog will be added to dogs and world.
@@ -157,9 +114,9 @@ void HHPWorld::createCat(std::shared_ptr<Organism>& org, int x, int y, int direc
 // genome will be randomized if initGenome = true (default)
 void HHPWorld::createDog(std::shared_ptr<Organism>& org, int x, int y, int direction, bool initGenome) {
 	//randomize genome
-	if (initGenome) {
-		org->genomes["dog::"]->fillRandom();
-	}
+	//if (initGenome) {
+	//	org->genomes["dog::"]->fillRandom();
+	//}
 	if (x == -1) {
 		x = Random::getIndex(worldX);
 	}
@@ -171,7 +128,7 @@ void HHPWorld::createDog(std::shared_ptr<Organism>& org, int x, int y, int direc
 	}
 	// make a cat and place this in world
 	auto newDog = std::make_shared<Host>(org, HostTag::dogTag, x, y, direction);;
-	newDog->bitstring = std::vector<bool>(Random::getInt(1,10));
+	newDog->bitstring = std::vector<bool>(Random::getInt(1,3));
 	for(int i=0; i<newDog->bitstring.size(); ++i){
 		newDog->bitstring[i] = Random::getInt(1);
 	}
@@ -184,9 +141,9 @@ void HHPWorld::createDog(std::shared_ptr<Organism>& org, int x, int y, int direc
 // genome will be randomized if initGenome = true (default)
 void HHPWorld::createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>& host, bool initGenome) {
 	//randomize genome
-	if (initGenome) {
-		org->genomes["flea::"]->fillRandom();
-	}
+	//if (initGenome) {
+	//	org->genomes["flea::"]->fillRandom();
+	//}
 	// make a cat and place this in world
 	auto newFlea = std::make_shared<Parasite>(org);
 	newFlea->bitstring = std::vector<bool>(Random::getInt(1,10));
@@ -214,7 +171,9 @@ void HHPWorld::birthCat(std::shared_ptr<Host>& parent, int x, int y, int directi
 	// make a new mabe offspring org from parent org
 	auto newOrg = parent->org->makeMutatedOffspringFrom(parent->org);
 	// place in world in same location at parent with random direction
-	createCat(newOrg, x, y, direction, false);
+	auto newCat = createCat(newOrg, x, y, direction, false);
+	newCat->bitstring = parent->bitstring;
+	newCat->mutate(mutationPointCat, mutationSizeCat);
 }
 
 // birth a dog given a parent
@@ -355,21 +314,55 @@ void HHPWorld::setupPopulations(std::map<std::string, std::shared_ptr<Group>>& g
 
 void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 
-	std::vector < std::shared_ptr<Host>> localKillList;
+	std::vector < std::shared_ptr<Host>> localHostKillList;
+	std::vector < std::shared_ptr<Host>> localHostParentList;
+	std::vector < std::shared_ptr<Parasite>> localParasiteKillList;
+	std::vector < std::pair<std::shared_ptr<Parasite>, std::shared_ptr<Host>>> localParasiteParentList;
+
+	// FIX ME!!!
+	// Check for parasite lifespan and kill from the flea list
+	// for each flea in kill list kill flea
 
 	for (int hostIndex = 0; hostIndex < hostList.size(); hostIndex++) {
 		auto h = hostList[hostIndex];
 
-		// kill with random chace 5% - just to show how death works
-		if (Random::P(.05)) {
-			localKillList.push_back(h); // don't kill them yet... it'll mess up the interation!
+		// Kill if at time of death
+		if ( h->timeOfDeath <= Global::update ) {
+			localHostKillList.push_back(h); // don't kill them yet... it'll mess up the interation!
 		}
 		else {
 			h->resource += 1; // eat something (you're all skin and bones!)
 			for (auto p : h->parasites) {
-				p->resource += (h->resource * .5) / h->parasites.size(); // parasites get 1/2 hosts food (less if there are more parasites...)
+				// FIXME How many resources lost to parasites
+				// parasites get 1/2 hosts food (less if there are more parasites...)
+				int lostResources = (h->resource * .5) / h->parasites.size();
+				p->resource += lostResources;
+				h->resource -= lostResources;
+				// CAN PARASITE REPRODUCE?
+				if(p->resource > reproductionThresholdFlea){
+					localParasiteParentList.push_back({p,h});
+					p->resource -= reproductionThresholdFlea;
+				}
 			}
 
+			// Check reproduction
+			int reproductionCost = reproductionThresholdCat;
+			if (h->tag == HostTag::dogTag){
+				reproductionCost = reproductionThresholdDog;
+			}
+			// Leave this as less-than, otherwise the host
+			// can die of reproducing.
+			if (h->resource > reproductionCost){
+				localHostParentList.push_back(h);	
+				h->resource -= reproductionCost;
+			}
+
+			if(h->resource <= 0){
+				std::cout << h->org->ID << " STARVED." << std::endl;
+				localHostKillList.push_back(h);
+			}
+
+			// Parameterize!!!!
 			double turnRate = .1;
 			double moveRate = .5;
 			if (Random::P(turnRate)) { // with probability turnRate turn left of right 45 degrees
@@ -380,9 +373,8 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 			}
 		}
 	}
-
 	// now kill the ones that died.
-	for (auto h : localKillList) {
+	for (auto h : localHostKillList) {
 		if (h->tag == HostTag::catTag) {
 			//std::cout << "   cat" << std::endl;
 			killCat(h); // kill a cat, and it's parasites
@@ -391,6 +383,19 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 			//std::cout << "   dog" << std::endl;
 			killDog(h); // kill a dog, and it's parasites
 		}
+	}
+
+	// Birth some babies
+	// for both hosts and parasites
+	for(auto h : localHostParentList ){
+		if(h->tag == HostTag::catTag){
+			birthCat(h);
+		} else {
+			birthDog(h);
+		}
+	}
+	for(auto p : localParasiteParentList){
+		birthFlea(p.first, p.second);
 	}
 }
 
@@ -402,15 +407,8 @@ void HHPWorld::jumpFlea(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2) { //
 
 		for(auto i=0; i<h1->parasites.size(); ++i){
 			if(infect(h1->parasites[i]->bitstring, h2->bitstring, .5)){
-				std::cout << "********** INFECTION! ***********" << std::endl;
-				h1->show_infection();
-				h1->parasites[i]->show_infection();
-				h2->show_infection();
-				std::cout << "*********************************" << std::endl;
 				h2->parasites.push_back(h1->parasites[i]);
 				h1->parasites.erase(h1->parasites.begin() + i);
-			} else {
-				std::cout << "*** INFECTION FAILED. ***" << std::endl;
 			}
 		}
 	} // else do nothing... no parasites on h1
@@ -432,7 +430,6 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 	// run the evaluation until time runs out...
 	do {
 
-
 		// update all hosts (death, resource, movement)
 		updateHosts(cats);
 		updateHosts(dogs);
@@ -446,44 +443,8 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 					do {
 						h2 = world(x, y).hosts[Random::getIndex(world(x, y).hosts.size())]; // reciver host
 					} while (h1 == h2); // keep picking until doner != reciver
-					std::cout << "JUMPING " << h1->org->ID << " AND " << h2->org->ID << std::endl;
 					jumpFlea(h1, h2);
 				}
-			}
-		}
-
-		// testing the setup....
-
-		if (cats.size() > 0) {
-			killCat(cats[0]);
-		}
-
-		if (dogs.size() > 0) {
-			killDog(dogs[0]);
-		}
-
-		//for(int i=0; i<dogs.size(); ++i){
-		//	std::cout << "Dog " << i << " now has " << dogs[i]->parasites.size() << " fleas." << std::endl;
-		//}
-
-		if (dogs.size() > 0) {
-			birthDog(dogs.back(), Global::update % worldX, Global::update % worldY);
-		//	birthDog(dogs.back(), 0, Global::update % worldY);
-		//	birthDog(dogs.back(), 0, Global::update % worldY);
-		}
-		if (cats.size() > 0) {
-			birthCat(cats.back(), Global::update % worldX, 0, 7);
-		//	birthCat(cats.back(), Global::update % worldX, 0, 7);
-		//	birthCat(cats.back(), Global::update % worldX, 0, 7);
-		}
-
-		if (fleas.size() > 0) {
-			if (cats.size() > 0) {
-				birthFlea(fleas.back(), cats[Random::getIndex(cats.size())]);
-		//		birthFlea(fleas.back(), cats[Random::getIndex(cats.size())]);
-		//		birthFlea(fleas.back(), cats[Random::getIndex(cats.size())]);
-		//		birthFlea(fleas.back(), cats[Random::getIndex(cats.size())]);
-		//		birthFlea(fleas.back(), cats[Random::getIndex(cats.size())]);
 			}
 		}
 
@@ -572,8 +533,6 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 		}
 		groups["flea::"]->population = newPop;
 
-
-
 		//std::cout << "           :: killing : cats" << std::endl;
 		// now kill everyone in kill lists so that the memory can be reused
 		for (auto beast : catKillList) {
@@ -602,7 +561,6 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 
 		std::cout << "Average fleas per cat: " << ave_fleas(cats) << std::endl;
 		std::cout << "Average fleas per dog: " << ave_fleas(dogs) << std::endl;
-		
 
 		// advance time
 		Global::update++;
@@ -614,7 +572,7 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 
 std::unordered_map<std::string, std::unordered_set<std::string>>
 HHPWorld::requiredGroups() {
-	return { {"cat::",{"G:cat::"}}, {"dog::",{"G:dog::"}}, {"flea::",{"G:flea::"}} };
+	return { {"cat::",{}}, {"dog::",{}}, {"flea::",{}} };
 	// this world needs cats, dogs and fleas, each with a genome with the same name...
 }
 
@@ -658,3 +616,80 @@ HHPWorld::ave_fleas(std::vector<std::shared_ptr<Host>> hosts){
 	}
 	return sum / hosts.size();
 }
+
+/*
+void HHPWorld::saveWorldImage() {
+	double cX = 1000;
+	double cY = 1000;
+
+	cartesian_canvas canvas(cX,cY);
+
+	canvas.pen_color(0, 0, 0);
+	canvas.fill_rectangle(-1 * (cX / 2), -1 * (cY / 2), cX/2, cY/2);
+
+	double multiCellWidth = (cX / worldX);
+	double multiCellHeight = (cY / worldY);
+
+	double cellWidth = (multiCellWidth / multiCellX);
+	double cellHeight = (multiCellHeight / multiCellY);
+
+	double x1, x2, y1, y2;
+	double multiCellX1, multiCellY1;
+	for (int wY = 0; wY < worldY; wY++) {
+		for (int wX = 0; wX < worldX; wX++) {
+			if (!world(wX, wY).empty) {
+				x1 = (wX * multiCellWidth) - (cX / 2);
+				y1 = (wY * multiCellHeight) - (cY / 2);
+				x2 = x1 + multiCellWidth;
+				y2 = y1 + multiCellHeight;
+
+				canvas.pen_color(255, 255, 255);
+				canvas.fill_rectangle(x1,y1,x2,y2);
+				//std::cout << "draw multi cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
+				multiCellX1 = wX * multiCellWidth;
+				multiCellY1 = wY * multiCellHeight;
+
+				for (int y = 0; y < multiCellY; y++) {
+					for (int x = 0; x < multiCellX; x++){
+						if (!world(wX, wY).cells(x, y).empty) {
+							x1 = multiCellX1 + x * cellWidth - (cX / 2);
+							y1 = multiCellY1 + y * cellHeight - (cY / 2);
+							x2 = x1 + cellWidth;
+							y2 = y1 + cellHeight;
+							if (world(wX, wY).cells(x, y).evil) {
+								canvas.pen_color(255, 0, 0);
+							}
+							else if (world(wX, wY).cells(x, y).murder) {
+								canvas.pen_color(125, 0, 0);
+							}
+							else if (world(wX, wY).cells(x, y).first) {
+								canvas.pen_color(0, 0, 255);
+							}
+							else {
+								canvas.pen_color(0, 255, 0);
+							}
+							canvas.fill_rectangle(x1, y1, x2, y2);
+							//std::cout << "  draw cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
+
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// add a grid
+	canvas.pen_color(0, 0, 0);
+	double pos = -1 * (cX / 2);
+	while (pos < (cX / 2)) {
+		canvas.fill_rectangle(pos-1, -1 * (cY / 2), pos, (cY / 2));
+		pos += multiCellWidth;
+	}
+	pos = -1 * (cY / 2);
+	while (pos < (cY / 2)) {
+		canvas.fill_rectangle(-1 * (cX / 2), pos-1, (cX / 2), pos);
+		pos += multiCellHeight;
+	}
+	canvas.image().save_image("output_"+std::to_string(100000+Global::update)+".bmp");
+}
+*/

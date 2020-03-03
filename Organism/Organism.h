@@ -37,6 +37,7 @@ public:
 
   std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> genomes;
   std::unordered_map<std::string, std::shared_ptr<AbstractBrain>> brains;
+  
 
   int offspringCount;
 

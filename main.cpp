@@ -184,6 +184,7 @@ int main(int argc, const char *argv[]) {
 
     // the run is finished... flush any data that has not been output yet
     for (auto const &group : groups) {
+        std::cout << "flushing archive for group : " << group.first << std::endl;
       group.second->archive(1);
     }
   } else if (Global::modePL->get() == "visualize") {
@@ -361,11 +362,20 @@ constructAllGroupsFrom(const std::shared_ptr<AbstractWorld> &world,
     auto orgs_to_load = loader.loadPopulation(file_to_load);
     int population_size = orgs_to_load.size();
 
+    // do we need this?
+    /*
     if (!population_size) {
       std::cout << "error: MASTER must contain at least one organism"
                 << std::endl;
       exit(1);
     }
+    */
+    // ends up no... so how about:
+    if (!population_size) {
+        std::cout << "warrning: default population for " << NS << " is empty... I hope you know what you are doing!" << std::endl;
+        //exit(1);
+    }
+
     // add population_size organisms which look like progenitor but could be
     // loaded from file
     for (auto &orgData : orgs_to_load) {
