@@ -39,6 +39,17 @@ class HHPWorld : public AbstractWorld {
 		static std::shared_ptr < ParameterLink<int>> reproductionThresholdCatPL;
 		static std::shared_ptr < ParameterLink<int>> reproductionThresholdDogPL;
 		static std::shared_ptr < ParameterLink<int>> reproductionThresholdFleaPL;
+		static std::shared_ptr < ParameterLink<double>> turnRateCatPL;
+		static std::shared_ptr < ParameterLink<double>> turnRateDogPL;
+		static std::shared_ptr < ParameterLink<double>> moveRateCatPL;
+		static std::shared_ptr < ParameterLink<double>> moveRateDogPL;
+		static std::shared_ptr < ParameterLink<int>> startingLockLengthCatPL;
+		static std::shared_ptr < ParameterLink<int>> startingLockLengthDogPL;
+		static std::shared_ptr < ParameterLink<int>> startingKeyLengthFleaPL;
+		static std::shared_ptr < ParameterLink<double>> requiredMatchLengthCatPL;
+		static std::shared_ptr < ParameterLink<double>> requiredMatchLengthDogPL;
+		static std::shared_ptr < ParameterLink<double>> resourcesLostToFleasCatPL;
+		static std::shared_ptr < ParameterLink<double>> resourcesLostToFleasDogPL;
 
 		double mutationPointCat;
 		double mutationSizeCat;
@@ -49,6 +60,17 @@ class HHPWorld : public AbstractWorld {
 		int reproductionThresholdCat;
 		int reproductionThresholdDog;
 		int reproductionThresholdFlea;
+		double turnRateCat;
+		double turnRateDog;
+		double moveRateCat;
+		double moveRateDog;
+		int startingLockLengthCat;
+		int startingLockLengthDog;
+		int startingKeyLengthFlea;
+		double requiredMatchLengthCat;
+		double requiredMatchLengthDog;
+		double resourcesLostToFleasCat;
+		double resourcesLostToFleasDog;
 
 		static std::shared_ptr < ParameterLink<int>> recordImageStepPL;
 		int recordImageStep;

@@ -17,19 +17,20 @@ std::shared_ptr < ParameterLink<bool>> HHPWorld::worldWrapsPL =
 Parameters::register_parameter("WORLD_HHP-worldWraps", true,
 		"does the world wrap?");
 std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointCatPL = 
-Parameters::register_parameter("WORLD_HHP-mutationPointCat", .05,
+Parameters::register_parameter("WORLD_HHP-mutationPointCat", 0.05,
 		"the point flip per site mutation rate");
 std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeCatPL = 
-Parameters::register_parameter("WORLD_HHP-mutationSizeCat", .001,
+Parameters::register_parameter("WORLD_HHP-mutationSizeCat", 0.001,
 		"the insertion/deletion per site mutation rate");
 std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointDogPL =
-Parameters::register_parameter("WORLD_HHP-mutationPointDog", .05,
+Parameters::register_parameter("WORLD_HHP-mutationPointDog", 0.05,
 		"the point flip per site mutation rate");
 std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeDogPL =
-Parameters::register_parameter("WORLD_HHP-mutationSizeDog", .001,
+Parameters::register_parameter("WORLD_HHP-mutationSizeDog", 0.001,
 		"the point insertion/deletion per site mutation rate");
+// Told Cliff I wouldn't forget to add the leading zero :)
 std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointFleaPL =
-Parameters::register_parameter("WORLD_HHP-mutationPointFlea", .05,
+Parameters::register_parameter("WORLD_HHP-mutationPointFlea", 0.05,
 		"the point flip per site mutation rate");
 std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeFleaPL =
 Parameters::register_parameter("WORLD_HHP-mutationSizeFlea", 0.001,
@@ -43,7 +44,39 @@ Parameters::register_parameter("WORLD_HHP-reproductionThresholdDog", 10,
 std::shared_ptr < ParameterLink<int>> HHPWorld::reproductionThresholdFleaPL =
 Parameters::register_parameter("WORLD_HHP-reproductionThresholdFlea", 2,
 		"required resources for a flea to reproduce");
-
+std::shared_ptr < ParameterLink<double>> HHPWorld::turnRateCatPL =
+Parameters::register_parameter("WORLD_HHP-turnRateCat", 0.1,
+		"how often cats switch direction");
+std::shared_ptr < ParameterLink<double>> HHPWorld::turnRateDogPL =
+Parameters::register_parameter("WORLD_HHP-turnRateDog", 0.1,
+		"how often dogs switch direction");
+std::shared_ptr < ParameterLink<double>> HHPWorld::moveRateCatPL =
+Parameters::register_parameter("WORLD_HHP-moveRateCat", 0.5,
+		"move rate for cats");
+std::shared_ptr < ParameterLink<double>> HHPWorld::moveRateDogPL =
+Parameters::register_parameter("WORLD_HHP-moveRateDog", 0.5,
+		"move rate for dogs");
+std::shared_ptr < ParameterLink<int>> HHPWorld::startingLockLengthCatPL =
+Parameters::register_parameter("WORLD_HHP-startingLockLengthCat", 1,
+		"number of bits for a cat's beginning lock string");
+std::shared_ptr < ParameterLink<int>> HHPWorld::startingLockLengthDogPL =
+Parameters::register_parameter("WORLD_HHP-startingLockLengthDog", 1,
+		"number of bits for a dog's beginning lock string");
+std::shared_ptr < ParameterLink<int>> HHPWorld::startingKeyLengthFleaPL =
+Parameters::register_parameter("WORLD_HHP-startingKeLengthFlea", 5,
+		"number of bits for a flea's beginning key string");
+std::shared_ptr < ParameterLink<double>> HHPWorld::requiredMatchLengthCatPL =
+Parameters::register_parameter("WORLD_HHP-requiredMatchLengthCat", 0.5,
+		"percentage of lock necessary to match for a cat to be infected");
+std::shared_ptr < ParameterLink<double>> HHPWorld::requiredMatchLengthDogPL =
+Parameters::register_parameter("WORLD_HHP-requiredMatchLengthDog", 0.5,
+		"percentage of lock necessary to match for a dog to be infected");
+std::shared_ptr < ParameterLink<double>> HHPWorld::resourcesLostToFleasCatPL =
+Parameters::register_parameter("WORLD_HHP-resourcesLostToFleasCat", 0.5,
+		"percentage of resources a cat loses to fleas each update");
+std::shared_ptr < ParameterLink<double>> HHPWorld::resourcesLostToFleasDogPL =
+Parameters::register_parameter("WORLD_HHP-resourcesLostToFleasDog", 0.5,
+		"percentage of resources a dog loses to fleas each update");
 HHPWorld::HHPWorld(std::shared_ptr<ParametersTable> PT_)
 	: AbstractWorld(PT_) {
 
@@ -56,6 +89,17 @@ HHPWorld::HHPWorld(std::shared_ptr<ParametersTable> PT_)
 		reproductionThresholdCat = reproductionThresholdCatPL->get(PT);
 		reproductionThresholdDog = reproductionThresholdDogPL->get(PT);
 		reproductionThresholdFlea = reproductionThresholdFleaPL->get(PT);
+		turnRateCat = turnRateCatPL->get(PT);
+		turnRateDog = turnRateDogPL->get(PT);
+		moveRateCat = moveRateCatPL->get(PT);
+		moveRateDog = moveRateDogPL->get(PT);
+		startingLockLengthCat = startingLockLengthCatPL->get(PT);
+		startingLockLengthDog = startingLockLengthDogPL->get(PT);
+		startingKeyLengthFlea = startingKeyLengthFleaPL->get(PT);
+		requiredMatchLengthCat = requiredMatchLengthCatPL->get(PT);
+		requiredMatchLengthDog = requiredMatchLengthDogPL->get(PT);
+		resourcesLostToFleasCat = resourcesLostToFleasCatPL->get(PT);
+		resourcesLostToFleasDog = resourcesLostToFleasDogPL->get(PT);
 
 		std::cout << "in HHPWorld constructor :: " << std::endl;
 
@@ -98,7 +142,7 @@ std::shared_ptr<HHPWorld::Host> HHPWorld::createCat(std::shared_ptr<Organism>& o
 	// make a cat and place this in world
 	auto newCat = std::make_shared<Host>(org, HostTag::catTag, x, y, direction);
 	if(initGenome){
-		newCat->bitstring = std::vector<bool>(Random::getInt(1,3));
+		newCat->bitstring = std::vector<bool>(Random::getInt(1,startingLockLengthCat));
 		for(int i=0; i<newCat->bitstring.size(); ++i){
 			newCat->bitstring[i] = Random::getInt(1);
 		}
@@ -128,7 +172,7 @@ void HHPWorld::createDog(std::shared_ptr<Organism>& org, int x, int y, int direc
 	}
 	// make a cat and place this in world
 	auto newDog = std::make_shared<Host>(org, HostTag::dogTag, x, y, direction);;
-	newDog->bitstring = std::vector<bool>(Random::getInt(1,3));
+	newDog->bitstring = std::vector<bool>(Random::getInt(1,startingLockLengthDog));
 	for(int i=0; i<newDog->bitstring.size(); ++i){
 		newDog->bitstring[i] = Random::getInt(1);
 	}
@@ -146,7 +190,7 @@ void HHPWorld::createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>&
 	//}
 	// make a cat and place this in world
 	auto newFlea = std::make_shared<Parasite>(org);
-	newFlea->bitstring = std::vector<bool>(Random::getInt(1,10));
+	newFlea->bitstring = std::vector<bool>(Random::getInt(1,startingKeyLengthFlea));
 	for(int i=0; i<newFlea->bitstring.size(); ++i){
 		newFlea->bitstring[i] = Random::getInt(1);
 	}
@@ -319,10 +363,6 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 	std::vector < std::shared_ptr<Parasite>> localParasiteKillList;
 	std::vector < std::pair<std::shared_ptr<Parasite>, std::shared_ptr<Host>>> localParasiteParentList;
 
-	// FIX ME!!!
-	// Check for parasite lifespan and kill from the flea list
-	// for each flea in kill list kill flea
-
 	for (int hostIndex = 0; hostIndex < hostList.size(); hostIndex++) {
 		auto h = hostList[hostIndex];
 
@@ -332,18 +372,27 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 		}
 		else {
 			h->resource += 1; // eat something (you're all skin and bones!)
+			double resourcesLostPercentage = resourcesLostToFleasCat;
+			if (h->tag == HostTag::dogTag){
+				resourcesLostPercentage = resourcesLostToFleasDog;
+			}
+			int lostResources = ceil(h->resource * resourcesLostPercentage);
+			h->resource -= lostResources;
 			for (auto p : h->parasites) {
-				// FIXME How many resources lost to parasites
-				// parasites get 1/2 hosts food (less if there are more parasites...)
-				int lostResources = (h->resource * .5) / h->parasites.size();
-				p->resource += lostResources;
-				h->resource -= lostResources;
+				// How many resources lost to parasites
+				p->resource += lostResources / h->parasites.size();
 				// CAN PARASITE REPRODUCE?
 				if(p->resource > reproductionThresholdFlea){
 					localParasiteParentList.push_back({p,h});
 					p->resource -= reproductionThresholdFlea;
 				}
 			}
+
+			if(h->resource <= 0){
+				std::cout << h->org->ID << " STARVED." << std::endl;
+				localHostKillList.push_back(h);
+			}
+
 
 			// Check reproduction
 			int reproductionCost = reproductionThresholdCat;
@@ -357,14 +406,14 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 				h->resource -= reproductionCost;
 			}
 
-			if(h->resource <= 0){
-				std::cout << h->org->ID << " STARVED." << std::endl;
-				localHostKillList.push_back(h);
-			}
-
 			// Parameterize!!!!
-			double turnRate = .1;
-			double moveRate = .5;
+			double turnRate = turnRateCat;
+			double moveRate = moveRateCat;
+			if (h->tag == HostTag::dogTag){
+				turnRate = turnRateDog;
+				moveRate = moveRateDog;
+			}
+		
 			if (Random::P(turnRate)) { // with probability turnRate turn left of right 45 degrees
 				h->direction += loopMod((h->direction + Random::getIndex(2) * 2) - 1, 8); // i.e. direction +/- 1
 			}
@@ -406,7 +455,11 @@ void HHPWorld::jumpFlea(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2) { //
 		//h1->parasites.erase(h1->parasites.begin() + jumperIndex); // remove parasite from doner
 
 		for(auto i=0; i<h1->parasites.size(); ++i){
-			if(infect(h1->parasites[i]->bitstring, h2->bitstring, .5)){
+			double matchPercentage = requiredMatchLengthCat;
+			if (h2->tag == HostTag::dogTag){
+				matchPercentage = requiredMatchLengthDog;
+			} 
+			if(infect(h1->parasites[i]->bitstring, h2->bitstring, matchPercentage)){
 				h2->parasites.push_back(h1->parasites[i]);
 				h1->parasites.erase(h1->parasites.begin() + i);
 			}
