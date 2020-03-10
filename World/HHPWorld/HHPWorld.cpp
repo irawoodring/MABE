@@ -63,7 +63,7 @@ std::shared_ptr < ParameterLink<int>> HHPWorld::startingLockLengthDogPL =
 Parameters::register_parameter("WORLD_HHP-startingLockLengthDog", 1,
 		"number of bits for a dog's beginning lock string");
 std::shared_ptr < ParameterLink<int>> HHPWorld::startingKeyLengthFleaPL =
-Parameters::register_parameter("WORLD_HHP-startingKeLengthFlea", 5,
+Parameters::register_parameter("WORLD_HHP-startingKeyLengthFlea", 5,
 		"number of bits for a flea's beginning key string");
 std::shared_ptr < ParameterLink<double>> HHPWorld::requiredMatchLengthCatPL =
 Parameters::register_parameter("WORLD_HHP-requiredMatchLengthCat", 0.5,
@@ -283,6 +283,8 @@ void HHPWorld::killHost(std::shared_ptr<Host>& host,
 	}
 
 	// kill parasites on host
+	if (host->parasites.size() > 0)
+		std::cout << "Killing " << host->parasites.size() << " parasites." << std::endl;
 	for (int i = 0; i < host->parasites.size(); i++) {
 		killParasite(host->parasites[i],host,fleas,fleaKillList);
 	}
@@ -365,55 +367,53 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 
 	for (int hostIndex = 0; hostIndex < hostList.size(); hostIndex++) {
 		auto h = hostList[hostIndex];
-
-		// Kill if at time of death
-		if ( h->timeOfDeath <= Global::update ) {
+		// Random host death or livespan over.
+		if (Random::P(.05) || h->timeOfDeath <= Global::update) {
 			localHostKillList.push_back(h); // don't kill them yet... it'll mess up the interation!
 		}
+
 		else {
 			h->resource += 1; // eat something (you're all skin and bones!)
 			double resourcesLostPercentage = resourcesLostToFleasCat;
 			if (h->tag == HostTag::dogTag){
 				resourcesLostPercentage = resourcesLostToFleasDog;
 			}
-			int lostResources = ceil(h->resource * resourcesLostPercentage);
-			h->resource -= lostResources;
+			int lostResources = h->resource * resourcesLostPercentage;
+
 			for (auto p : h->parasites) {
 				// How many resources lost to parasites
 				p->resource += lostResources / h->parasites.size();
+				h->resource -= lostResources / h->parasites.size();
 				// CAN PARASITE REPRODUCE?
 				if(p->resource > reproductionThresholdFlea){
 					localParasiteParentList.push_back({p,h});
 					p->resource -= reproductionThresholdFlea;
 				}
 			}
-
-			if(h->resource <= 0){
-				std::cout << h->org->ID << " STARVED." << std::endl;
+			if(h->resource < 0){
+				std::cout << h->org->ID << " STARVED with " << h->resource << "resources." << std::endl;
 				localHostKillList.push_back(h);
 			}
-
 
 			// Check reproduction
 			int reproductionCost = reproductionThresholdCat;
 			if (h->tag == HostTag::dogTag){
 				reproductionCost = reproductionThresholdDog;
 			}
-			// Leave this as less-than, otherwise the host
-			// can die of reproducing.
+			// If we got the resources, reproduce
 			if (h->resource > reproductionCost){
 				localHostParentList.push_back(h);	
 				h->resource -= reproductionCost;
 			}
 
-			// Parameterize!!!!
+			// Move hosts
 			double turnRate = turnRateCat;
 			double moveRate = moveRateCat;
 			if (h->tag == HostTag::dogTag){
 				turnRate = turnRateDog;
 				moveRate = moveRateDog;
 			}
-		
+
 			if (Random::P(turnRate)) { // with probability turnRate turn left of right 45 degrees
 				h->direction += loopMod((h->direction + Random::getIndex(2) * 2) - 1, 8); // i.e. direction +/- 1
 			}
@@ -423,16 +423,22 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 		}
 	}
 	// now kill the ones that died.
+	std::cout << "Killing: ";
+	int num_cats=0;
+	int num_dogs=0;
 	for (auto h : localHostKillList) {
 		if (h->tag == HostTag::catTag) {
 			//std::cout << "   cat" << std::endl;
 			killCat(h); // kill a cat, and it's parasites
+			num_cats++;
 		}
 		else {
 			//std::cout << "   dog" << std::endl;
 			killDog(h); // kill a dog, and it's parasites
+			num_dogs++;
 		}
 	}
+	std::cout << num_cats << " cats and " << num_dogs << " dogs." << std::endl;
 
 	// Birth some babies
 	// for both hosts and parasites
@@ -454,6 +460,7 @@ void HHPWorld::jumpFlea(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2) { //
 		//h2->parasites.push_back(h1->parasites[jumperIndex]); // jump parasite to the reciver
 		//h1->parasites.erase(h1->parasites.begin() + jumperIndex); // remove parasite from doner
 
+		//std::cout << h1->org->ID << " to " << h2->org->ID << std::endl;
 		for(auto i=0; i<h1->parasites.size(); ++i){
 			double matchPercentage = requiredMatchLengthCat;
 			if (h2->tag == HostTag::dogTag){
@@ -671,78 +678,78 @@ HHPWorld::ave_fleas(std::vector<std::shared_ptr<Host>> hosts){
 }
 
 /*
-void HHPWorld::saveWorldImage() {
-	double cX = 1000;
-	double cY = 1000;
+   void HHPWorld::saveWorldImage() {
+   double cX = 1000;
+   double cY = 1000;
 
-	cartesian_canvas canvas(cX,cY);
+   cartesian_canvas canvas(cX,cY);
 
-	canvas.pen_color(0, 0, 0);
-	canvas.fill_rectangle(-1 * (cX / 2), -1 * (cY / 2), cX/2, cY/2);
+   canvas.pen_color(0, 0, 0);
+   canvas.fill_rectangle(-1 * (cX / 2), -1 * (cY / 2), cX/2, cY/2);
 
-	double multiCellWidth = (cX / worldX);
-	double multiCellHeight = (cY / worldY);
+   double multiCellWidth = (cX / worldX);
+   double multiCellHeight = (cY / worldY);
 
-	double cellWidth = (multiCellWidth / multiCellX);
-	double cellHeight = (multiCellHeight / multiCellY);
+   double cellWidth = (multiCellWidth / multiCellX);
+   double cellHeight = (multiCellHeight / multiCellY);
 
-	double x1, x2, y1, y2;
-	double multiCellX1, multiCellY1;
-	for (int wY = 0; wY < worldY; wY++) {
-		for (int wX = 0; wX < worldX; wX++) {
-			if (!world(wX, wY).empty) {
-				x1 = (wX * multiCellWidth) - (cX / 2);
-				y1 = (wY * multiCellHeight) - (cY / 2);
-				x2 = x1 + multiCellWidth;
-				y2 = y1 + multiCellHeight;
+   double x1, x2, y1, y2;
+   double multiCellX1, multiCellY1;
+   for (int wY = 0; wY < worldY; wY++) {
+   for (int wX = 0; wX < worldX; wX++) {
+   if (!world(wX, wY).empty) {
+   x1 = (wX * multiCellWidth) - (cX / 2);
+   y1 = (wY * multiCellHeight) - (cY / 2);
+   x2 = x1 + multiCellWidth;
+   y2 = y1 + multiCellHeight;
 
-				canvas.pen_color(255, 255, 255);
-				canvas.fill_rectangle(x1,y1,x2,y2);
-				//std::cout << "draw multi cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
-				multiCellX1 = wX * multiCellWidth;
-				multiCellY1 = wY * multiCellHeight;
+   canvas.pen_color(255, 255, 255);
+   canvas.fill_rectangle(x1,y1,x2,y2);
+//std::cout << "draw multi cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
+multiCellX1 = wX * multiCellWidth;
+multiCellY1 = wY * multiCellHeight;
 
-				for (int y = 0; y < multiCellY; y++) {
-					for (int x = 0; x < multiCellX; x++){
-						if (!world(wX, wY).cells(x, y).empty) {
-							x1 = multiCellX1 + x * cellWidth - (cX / 2);
-							y1 = multiCellY1 + y * cellHeight - (cY / 2);
-							x2 = x1 + cellWidth;
-							y2 = y1 + cellHeight;
-							if (world(wX, wY).cells(x, y).evil) {
-								canvas.pen_color(255, 0, 0);
-							}
-							else if (world(wX, wY).cells(x, y).murder) {
-								canvas.pen_color(125, 0, 0);
-							}
-							else if (world(wX, wY).cells(x, y).first) {
-								canvas.pen_color(0, 0, 255);
-							}
-							else {
-								canvas.pen_color(0, 255, 0);
-							}
-							canvas.fill_rectangle(x1, y1, x2, y2);
-							//std::cout << "  draw cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
+for (int y = 0; y < multiCellY; y++) {
+for (int x = 0; x < multiCellX; x++){
+if (!world(wX, wY).cells(x, y).empty) {
+x1 = multiCellX1 + x * cellWidth - (cX / 2);
+y1 = multiCellY1 + y * cellHeight - (cY / 2);
+x2 = x1 + cellWidth;
+y2 = y1 + cellHeight;
+if (world(wX, wY).cells(x, y).evil) {
+canvas.pen_color(255, 0, 0);
+}
+else if (world(wX, wY).cells(x, y).murder) {
+canvas.pen_color(125, 0, 0);
+}
+else if (world(wX, wY).cells(x, y).first) {
+canvas.pen_color(0, 0, 255);
+}
+else {
+canvas.pen_color(0, 255, 0);
+}
+canvas.fill_rectangle(x1, y1, x2, y2);
+//std::cout << "  draw cell : " << x1 << ", " << y1 << ", " << x2 << ", " << y2 << std::endl;
 
-						}
-					}
-				}
-			}
-		}
-	}
+}
+}
+}
+}
+}
+}
 
-	// add a grid
-	canvas.pen_color(0, 0, 0);
-	double pos = -1 * (cX / 2);
-	while (pos < (cX / 2)) {
-		canvas.fill_rectangle(pos-1, -1 * (cY / 2), pos, (cY / 2));
-		pos += multiCellWidth;
-	}
-	pos = -1 * (cY / 2);
-	while (pos < (cY / 2)) {
-		canvas.fill_rectangle(-1 * (cX / 2), pos-1, (cX / 2), pos);
-		pos += multiCellHeight;
-	}
-	canvas.image().save_image("output_"+std::to_string(100000+Global::update)+".bmp");
+// add a grid
+canvas.pen_color(0, 0, 0);
+double pos = -1 * (cX / 2);
+while (pos < (cX / 2)) {
+canvas.fill_rectangle(pos-1, -1 * (cY / 2), pos, (cY / 2));
+pos += multiCellWidth;
+}
+pos = -1 * (cY / 2);
+while (pos < (cY / 2)) {
+canvas.fill_rectangle(-1 * (cX / 2), pos-1, (cX / 2), pos);
+pos += multiCellHeight;
+}
+canvas.image().save_image("output_"+std::to_string(100000+Global::update)+".bmp");
 }
 */
