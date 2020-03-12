@@ -41,8 +41,8 @@ Parameters::register_parameter("WORLD_HHP-reproductionThresholdCat", 10,
 std::shared_ptr < ParameterLink<int>> HHPWorld::reproductionThresholdDogPL =
 Parameters::register_parameter("WORLD_HHP-reproductionThresholdDog", 10,
 		"required resources for a dog to reproduce");
-std::shared_ptr < ParameterLink<int>> HHPWorld::reproductionThresholdFleaPL =
-Parameters::register_parameter("WORLD_HHP-reproductionThresholdFlea", 2,
+std::shared_ptr < ParameterLink<double>> HHPWorld::reproductionThresholdFleaPL =
+Parameters::register_parameter("WORLD_HHP-reproductionThresholdFlea", .5,
 		"required resources for a flea to reproduce");
 std::shared_ptr < ParameterLink<double>> HHPWorld::turnRateCatPL =
 Parameters::register_parameter("WORLD_HHP-turnRateCat", 0.1,
@@ -60,7 +60,7 @@ std::shared_ptr < ParameterLink<int>> HHPWorld::startingLockLengthCatPL =
 Parameters::register_parameter("WORLD_HHP-startingLockLengthCat", 1,
 		"number of bits for a cat's beginning lock string");
 std::shared_ptr < ParameterLink<int>> HHPWorld::startingLockLengthDogPL =
-Parameters::register_parameter("WORLD_HHP-startingLockLengthDog", 1,
+Parameters::register_parameter("WORLD_HHP-startingLockLengthDog", 5,
 		"number of bits for a dog's beginning lock string");
 std::shared_ptr < ParameterLink<int>> HHPWorld::startingKeyLengthFleaPL =
 Parameters::register_parameter("WORLD_HHP-startingKeyLengthFlea", 5,
@@ -156,11 +156,7 @@ std::shared_ptr<HHPWorld::Host> HHPWorld::createCat(std::shared_ptr<Organism>& o
 // create a Dog. dog will be added to dogs and world.
 // if x, y, direction are not provided, dog will be placed randomly in world
 // genome will be randomized if initGenome = true (default)
-void HHPWorld::createDog(std::shared_ptr<Organism>& org, int x, int y, int direction, bool initGenome) {
-	//randomize genome
-	//if (initGenome) {
-	//	org->genomes["dog::"]->fillRandom();
-	//}
+std::shared_ptr<HHPWorld::Host> HHPWorld::createDog(std::shared_ptr<Organism>& org, int x, int y, int direction, bool initGenome) {
 	if (x == -1) {
 		x = Random::getIndex(worldX);
 	}
@@ -170,32 +166,40 @@ void HHPWorld::createDog(std::shared_ptr<Organism>& org, int x, int y, int direc
 	if (direction == -1) {
 		direction = Random::getIndex(8);
 	}
-	// make a cat and place this in world
-	auto newDog = std::make_shared<Host>(org, HostTag::dogTag, x, y, direction);;
-	newDog->bitstring = std::vector<bool>(Random::getInt(1,startingLockLengthDog));
-	for(int i=0; i<newDog->bitstring.size(); ++i){
-		newDog->bitstring[i] = Random::getInt(1);
+	// make a dog and place this in world
+	auto newDog = std::make_shared<Host>(org, HostTag::dogTag, x, y, direction);
+	if(initGenome){
+		int length = Random::getInt(1, startingLockLengthDog);
+		//std::cout << "Dog length is " << length << std::endl;
+		newDog->bitstring = std::vector<bool>(length);
+		for(int i=0; i<newDog->bitstring.size(); ++i){
+			newDog->bitstring[i] = Random::getInt(1);
+		}
 	}
+
 	dogs.push_back(newDog);
 	world(newDog->x, newDog->y).hosts.push_back(newDog);
+	return newDog;
 }
 
 // create a flea and place on the provided host
 // flea will be added to fleas
 // genome will be randomized if initGenome = true (default)
-void HHPWorld::createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>& host, bool initGenome) {
+std::shared_ptr<HHPWorld::Parasite> HHPWorld::createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>& host, bool initGenome) {
 	//randomize genome
 	//if (initGenome) {
 	//	org->genomes["flea::"]->fillRandom();
 	//}
 	// make a cat and place this in world
 	auto newFlea = std::make_shared<Parasite>(org);
+	//std::cout << "Making flea " << newFlea->org->ID << " on host " << host->org->ID << std::endl;
 	newFlea->bitstring = std::vector<bool>(Random::getInt(1,startingKeyLengthFlea));
 	for(int i=0; i<newFlea->bitstring.size(); ++i){
 		newFlea->bitstring[i] = Random::getInt(1);
 	}
 	fleas.push_back(newFlea);
 	host->parasites.push_back(newFlea);
+	return newFlea;
 }
 
 // birth a cat given a parent
@@ -215,7 +219,7 @@ void HHPWorld::birthCat(std::shared_ptr<Host>& parent, int x, int y, int directi
 	// make a new mabe offspring org from parent org
 	auto newOrg = parent->org->makeMutatedOffspringFrom(parent->org);
 	// place in world in same location at parent with random direction
-	auto newCat = createCat(newOrg, x, y, direction, false);
+	auto newCat = createCat(newOrg, x, y, direction, true);
 	newCat->bitstring = parent->bitstring;
 	newCat->mutate(mutationPointCat, mutationSizeCat);
 }
@@ -237,7 +241,9 @@ void HHPWorld::birthDog(std::shared_ptr<Host>& parent, int x, int y, int directi
 	// make a new mabe offspring org from parent org
 	auto newOrg = parent->org->makeMutatedOffspringFrom(parent->org);
 	// place in world in same location at parent with random direction
-	createDog(newOrg, x, y, direction, false);
+	auto newDog = createDog(newOrg, x, y, direction, true);
+	newDog->bitstring = parent->bitstring;
+	newDog->mutate(mutationPointDog, mutationSizeDog);
 }
 
 // birth a flea given a parent and host
@@ -245,7 +251,9 @@ void HHPWorld::birthDog(std::shared_ptr<Host>& parent, int x, int y, int directi
 void HHPWorld::birthFlea(std::shared_ptr<Parasite>& parent, std::shared_ptr<Host>& host) {
 	// make a new mabe offspring org from parent org
 	auto newOrg = parent->org->makeMutatedOffspringFrom(parent->org);
-	createFlea(newOrg, host, false);
+	auto newFlea = createFlea(newOrg, host, true);
+	newFlea->bitstring = parent->bitstring;
+	newFlea->mutate(mutationPointFlea, mutationSizeFlea);
 }
 
 // kill a host, this will:
@@ -282,12 +290,17 @@ void HHPWorld::killHost(std::shared_ptr<Host>& host,
 		exit(1);
 	}
 
-	// kill parasites on host
-	if (host->parasites.size() > 0)
-		std::cout << "Killing " << host->parasites.size() << " parasites." << std::endl;
-	for (int i = 0; i < host->parasites.size(); i++) {
+	// OMG IS IT AN ITERATOR ISSUE?
+	// Always dies on the last element.  Shows up 
+	int size = host->parasites.size();
+	for (int i = host->parasites.size() - 1; i>=0 ; i--) {
+		//host->parasites[0]->show();
+		//std::cout << "----------" << std::endl;
 		killParasite(host->parasites[i],host,fleas,fleaKillList);
 	}
+	//std::cout << "SIZE OF LIST IS NOW " << host->parasites.size() << std::endl;
+
+
 	// remove from provided host list
 	hosts.erase(it);
 }
@@ -308,20 +321,22 @@ void HHPWorld::killParasite(std::shared_ptr<Parasite>& parasite,
 	// find in host
 	auto it = std::find(host->parasites.begin(), host->parasites.end(), parasite);
 	if (it == host->parasites.end()) {
-		std::cout << "    in HHPWorld::killParasite() :: parasite was not in provided parasite vector on provided host! exiting..." << std::endl;
+		std::cout << "    in HHPWorld::killParasite() :: parasite " << parasite->org->ID << " was not in provided parasite vector on provided host! exiting..." << std::endl;
 		exit(1);
 	}
-
-	// remove from host
-	host->parasites.erase(it);
-
+	else {
+		// remove from host
+		host->parasites.erase(it);
+	}
 	// find this parasite in the provided parasites list
 	it = std::find(parasites.begin(), parasites.end(), parasite);
 	if (it == parasites.end()) {
-		std::cout << "    in HHPWorld::killParasite() :: parasite was not in provided parasites vector! exiting..." << std::endl;
+		std::cout << "    in HHPWorld::killParasite() :: parasite " << parasite->org->ID << "  was not in provided parasites vector! exiting..." << std::endl;
 		exit(1);
 	}
-	parasites.erase(it);
+	else {
+		parasites.erase(it);
+	}
 }
 
 // kill a cat, see killHost
@@ -369,7 +384,7 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 		auto h = hostList[hostIndex];
 		// Random host death or livespan over.
 		if (Random::P(.05) || h->timeOfDeath <= Global::update) {
-			localHostKillList.push_back(h); // don't kill them yet... it'll mess up the interation!
+			//localHostKillList.push_back(h); // don't kill them yet... it'll mess up the interation!
 		}
 
 		else {
@@ -378,16 +393,19 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 			if (h->tag == HostTag::dogTag){
 				resourcesLostPercentage = resourcesLostToFleasDog;
 			}
-			int lostResources = h->resource * resourcesLostPercentage;
-
-			for (auto p : h->parasites) {
-				// How many resources lost to parasites
-				p->resource += lostResources / h->parasites.size();
-				h->resource -= lostResources / h->parasites.size();
-				// CAN PARASITE REPRODUCE?
-				if(p->resource > reproductionThresholdFlea){
-					localParasiteParentList.push_back({p,h});
-					p->resource -= reproductionThresholdFlea;
+			double lostResources = h->resource * resourcesLostPercentage;
+			//std::cout << resourcesLostPercentage << " Losing " << lostResources << "." << std::endl;
+			if( h->resource > 0){
+				for (auto p : h->parasites) {
+					// How many resources lost to parasites
+					p->resource += lostResources / h->parasites.size();
+					//std::cout << "Parasite has " << lostResources / h->parasites.size() << " food." << std::endl;
+					h->resource -= lostResources / h->parasites.size();
+					// CAN PARASITE REPRODUCE?
+					if(p->resource > reproductionThresholdFlea){
+						localParasiteParentList.push_back({p,h});
+						p->resource -= reproductionThresholdFlea;
+					}
 				}
 			}
 			if(h->resource < 0){
@@ -396,9 +414,9 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 			}
 
 			// Check reproduction
-			int reproductionCost = reproductionThresholdCat;
-			if (h->tag == HostTag::dogTag){
-				reproductionCost = reproductionThresholdDog;
+			int reproductionCost = reproductionThresholdDog;
+			if (h->tag == HostTag::catTag){
+				reproductionCost = reproductionThresholdCat;
 			}
 			// If we got the resources, reproduce
 			if (h->resource > reproductionCost){
@@ -423,30 +441,22 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 		}
 	}
 	// now kill the ones that died.
-	std::cout << "Killing: ";
-	int num_cats=0;
-	int num_dogs=0;
 	for (auto h : localHostKillList) {
 		if (h->tag == HostTag::catTag) {
-			//std::cout << "   cat" << std::endl;
 			killCat(h); // kill a cat, and it's parasites
-			num_cats++;
 		}
 		else {
-			//std::cout << "   dog" << std::endl;
 			killDog(h); // kill a dog, and it's parasites
-			num_dogs++;
 		}
 	}
-	std::cout << num_cats << " cats and " << num_dogs << " dogs." << std::endl;
 
 	// Birth some babies
 	// for both hosts and parasites
 	for(auto h : localHostParentList ){
-		if(h->tag == HostTag::catTag){
-			birthCat(h);
-		} else {
+		if(h->tag == HostTag::dogTag){
 			birthDog(h);
+		} else {
+			birthCat(h);
 		}
 	}
 	for(auto p : localParasiteParentList){
@@ -460,7 +470,6 @@ void HHPWorld::jumpFlea(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2) { //
 		//h2->parasites.push_back(h1->parasites[jumperIndex]); // jump parasite to the reciver
 		//h1->parasites.erase(h1->parasites.begin() + jumperIndex); // remove parasite from doner
 
-		//std::cout << h1->org->ID << " to " << h2->org->ID << std::endl;
 		for(auto i=0; i<h1->parasites.size(); ++i){
 			double matchPercentage = requiredMatchLengthCat;
 			if (h2->tag == HostTag::dogTag){
@@ -590,6 +599,7 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 		newPop.clear();
 		for (auto parasite : fleas) {
 			newPop.push_back(parasite->org);
+			//parasite->show();
 		}
 		groups["flea::"]->population = newPop;
 
@@ -619,8 +629,64 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 			<< "  flea pop size: " << fleas.size() 
 			<< std::endl;
 
+		//int total_cat = 0;
+		//for(auto cat : cats){
+		//	total_cat += cat->parasites.size();
+		//	//std::cout << "Cat has " << cat->parasites.size() << " fleas." << std::endl;
+		//}
+		//int total_dog = 0;
+		//for(auto dog : dogs){
+		//	total_dog += dog->parasites.size();
+		//std::cout << "Dog has " << dog->parasites.size() << " fleas." << std::endl;
+		//}
+		//std::cout << fleas.size() << " - " << total_cat + total_dog << " = " << fleas.size() - total_cat - total_dog << std::endl;
 		std::cout << "Average fleas per cat: " << ave_fleas(cats) << std::endl;
 		std::cout << "Average fleas per dog: " << ave_fleas(dogs) << std::endl;
+
+		int string_size;
+		for(auto i=cats.begin(); i!=cats.end();++i){
+			string_size += (*i)->bitstring.size();
+		}
+		std::cout << "Average lock size for cats is " << string_size / cats.size() << std::endl;
+
+		string_size = 0;
+		for(auto i=dogs.begin(); i!=dogs.end();++i){
+			string_size += (*i)->bitstring.size();
+		}
+		std::cout << "Average lock size for dogs is " << string_size / dogs.size() << std::endl;
+
+
+		string_size = 0;
+		for(auto i=fleas.begin(); i!=fleas.end();++i){
+			string_size += (*i)->bitstring.size();
+		}
+		std::cout << "Average lock size for fleas is " << string_size / fleas.size() << std::endl;
+
+		/*
+		   for(auto flea : fleas){
+		   bool found = false;
+		   for(auto host : cats){
+		   auto it = std::find(host->parasites.begin(), host->parasites.end(), flea);
+		   if(it != host->parasites.end()){
+		   found = true;
+		   }
+		   }
+		   for(auto host : dogs){
+		   auto it = std::find(host->parasites.begin(), host->parasites.end(), flea);
+		   if(it != host->parasites.end()){
+		   found = true;
+		   }
+		   }
+		// Brute force method to cleanup fleas that
+		// aren't on a host (for some fucking reason...)
+		if(!found){
+		//std::cout << "NOT FOUND: ";
+		//flea->show();
+		flea->org->kill();
+		}
+		}
+		 */
+
 
 		// advance time
 		Global::update++;

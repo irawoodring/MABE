@@ -38,7 +38,7 @@ class HHPWorld : public AbstractWorld {
 		static std::shared_ptr < ParameterLink<double>> mutationSizeFleaPL;
 		static std::shared_ptr < ParameterLink<int>> reproductionThresholdCatPL;
 		static std::shared_ptr < ParameterLink<int>> reproductionThresholdDogPL;
-		static std::shared_ptr < ParameterLink<int>> reproductionThresholdFleaPL;
+		static std::shared_ptr < ParameterLink<double>> reproductionThresholdFleaPL;
 		static std::shared_ptr < ParameterLink<double>> turnRateCatPL;
 		static std::shared_ptr < ParameterLink<double>> turnRateDogPL;
 		static std::shared_ptr < ParameterLink<double>> moveRateCatPL;
@@ -59,7 +59,7 @@ class HHPWorld : public AbstractWorld {
 		double mutationSizeFlea;
 		int reproductionThresholdCat;
 		int reproductionThresholdDog;
-		int reproductionThresholdFlea;
+		double reproductionThresholdFlea;
 		double turnRateCat;
 		double turnRateDog;
 		double moveRateCat;
@@ -247,6 +247,9 @@ class HHPWorld : public AbstractWorld {
 				}
 
 				void mutate(double point, double size) {
+					//std::cout << "Tag: " << (int)tag << " mutating." << std::endl;
+					//if(tag == HostTag::dogTag)
+					//	std::cout << "\t" << point << ", " << size << "." << std::endl;
 					// Find out how many flips to flip
 					int num = Random::getBinomial(bitstring.size(), point);
 					for(int j=0; j<num; ++j){
@@ -355,8 +358,8 @@ class HHPWorld : public AbstractWorld {
 				std::set<std::shared_ptr<Parasite>>& killList);
 
 		std::shared_ptr<Host> createCat(std::shared_ptr<Organism>& org, int x = -1, int y = -1, int direction = -1, bool initGenome = true);
-		void createDog(std::shared_ptr<Organism>& org, int x = -1, int y = -1, int direction = -1, bool initGenome = true);
-		void createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>& host, bool initGenome = true);
+		std::shared_ptr<Host> createDog(std::shared_ptr<Organism>& org, int x = -1, int y = -1, int direction = -1, bool initGenome = true);
+		std::shared_ptr<Parasite> createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>& host, bool initGenome = true);
 
 		void birthCat(std::shared_ptr<Host>& parent,int x = -1, int y = -1, int direction = -1);
 		void birthDog(std::shared_ptr<Host>& parent, int x = -1, int y = -1, int direction = -1);
