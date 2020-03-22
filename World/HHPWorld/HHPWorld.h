@@ -22,363 +22,516 @@
 
 class HHPWorld : public AbstractWorld {
 
+public:
+	static std::shared_ptr < ParameterLink<int>> worldXPL;
+	static std::shared_ptr < ParameterLink<int>> worldYPL;
+	int worldX;
+	int worldY;
+
+	static std::shared_ptr < ParameterLink<std::string>> scoreListPL;
+
+	static std::shared_ptr < ParameterLink<int>> cullParasitesToPL;
+
+	static std::shared_ptr < ParameterLink<double>> mutationEraseRatePL;
+	static std::shared_ptr < ParameterLink<double>> mutationPointCatPL;
+	static std::shared_ptr < ParameterLink<double>> mutationSizeCatPL;
+	static std::shared_ptr < ParameterLink<double>> mutationPointDogPL;
+	static std::shared_ptr < ParameterLink<double>> mutationSizeDogPL;
+	static std::shared_ptr < ParameterLink<double>> mutationPointFleaPL;
+	static std::shared_ptr < ParameterLink<double>> mutationSizeFleaPL;
+	static std::shared_ptr < ParameterLink<double>> reproductionThresholdCatPL;
+	static std::shared_ptr < ParameterLink<double>> reproductionThresholdDogPL;
+	static std::shared_ptr < ParameterLink<double>> reproductionThresholdFleaPL;
+	static std::shared_ptr < ParameterLink<double>> turnRateCatPL;
+	static std::shared_ptr < ParameterLink<double>> turnRateDogPL;
+	static std::shared_ptr < ParameterLink<double>> moveRateCatPL;
+	static std::shared_ptr < ParameterLink<double>> moveRateDogPL;
+	static std::shared_ptr < ParameterLink<int>> startingLockLengthCatPL;
+	static std::shared_ptr < ParameterLink<int>> startingLockLengthDogPL;
+	static std::shared_ptr < ParameterLink<int>> startingKeyLengthFleaPL;
+
+	static std::shared_ptr < ParameterLink<double>> catFleaFeedAmtPL;
+	static std::shared_ptr < ParameterLink<double>> dogFleaFeedAmtPL;
+	static std::shared_ptr < ParameterLink<double>> catMaxToShareWithFleasPL;
+	static std::shared_ptr < ParameterLink<double>> dogMaxToShareWithFleasPL;
+	static std::shared_ptr < ParameterLink<double>> catParasiteInheritancePL;
+	static std::shared_ptr < ParameterLink<double>> dogParasiteInheritancePL;
+	static std::shared_ptr < ParameterLink<double>> resourceInflowPL;
+
+	static std::shared_ptr < ParameterLink<double>> contactRatePL;
+	static std::shared_ptr < ParameterLink<double>> transferRatePL;
+
+	static std::shared_ptr < ParameterLink<bool>> isolateHostsPL;
+	bool isolateHosts;
+
+	double mutationEraseRate;
+
+	double mutationPointCat;
+	double mutationSizeCat;
+	double mutationPointDog;
+	double mutationSizeDog;
+	double mutationPointFlea;
+	double mutationSizeFlea;
+	double reproductionThresholdCat;
+	double reproductionThresholdDog;
+	double reproductionThresholdFlea;
+	double turnRateCat;
+	double turnRateDog;
+	double moveRateCat;
+	double moveRateDog;
+	int startingLockLengthCat;
+	int startingLockLengthDog;
+	int startingKeyLengthFlea;
+
+	double catFleaFeedAmt;
+	double dogFleaFeedAmt;
+	double catMaxToShareWithFleas;
+	double dogMaxToShareWithFleas;
+
+	double resourceInflow;
+	double contactRate = .5;
+	double transferRate = .1;
+
+	static std::shared_ptr < ParameterLink<int>> recordImageStepPL;
+	int recordImageStep;
+	static std::shared_ptr < ParameterLink<int>> recordWorldStateStepPL;
+	int recordWorldStateStep;
+	static std::shared_ptr < ParameterLink<int>> recordGenomesStepPL;
+	int recordGenomesStep;
+	static std::shared_ptr < ParameterLink<bool>> worldWrapsPL;
+	bool worldWraps;
+
+	int cullParasitesTo;
+
+	double catParasiteInheritance;
+	double dogParasiteInheritance;
+
+	std::vector<double> scoreList;
+
+	enum class HostTag { noTag, catTag, dogTag };
+
+	// Vector2d is wraps a vector<T> and provides x,y style access
+	// no error checking is provided for out of range errors
+	// internally this class uses R(ow) and C(olumn) (i.e. how the data is stored in the data vector)
+	// the user sees x,y where x = column, y = row
+	template <typename T> class Vector2d {
+		std::vector<T> data;
+		int R, C;
+
+		// get index into data vector for a given x,y
+		inline int getIndex(int r, int c) { return (r * C) + c; }
+
 	public:
+		Vector2d() {
+			R = 0;
+			C = 0;
+		}
+		// construct a vector of size x * y
+		Vector2d(int x, int y) : R(y), C(x) { data.resize(R * C); }
 
-		bool infect(const std::vector<bool> &key, const std::vector<bool> &lock, double percentage);
-		static std::shared_ptr < ParameterLink<int>> worldXPL;
-		static std::shared_ptr < ParameterLink<int>> worldYPL;
-		int worldX;
-		int worldY;
+		Vector2d(int x, int y, T value) : R(y), C(x) { data.resize(R * C, value); }
 
-		static std::shared_ptr < ParameterLink<double>> mutationPointCatPL;
-		static std::shared_ptr < ParameterLink<double>> mutationSizeCatPL;
-		static std::shared_ptr < ParameterLink<double>> mutationPointDogPL;
-		static std::shared_ptr < ParameterLink<double>> mutationSizeDogPL;
-		static std::shared_ptr < ParameterLink<double>> mutationPointFleaPL;
-		static std::shared_ptr < ParameterLink<double>> mutationSizeFleaPL;
-		static std::shared_ptr < ParameterLink<int>> reproductionThresholdCatPL;
-		static std::shared_ptr < ParameterLink<int>> reproductionThresholdDogPL;
-		static std::shared_ptr < ParameterLink<double>> reproductionThresholdFleaPL;
-		static std::shared_ptr < ParameterLink<double>> turnRateCatPL;
-		static std::shared_ptr < ParameterLink<double>> turnRateDogPL;
-		static std::shared_ptr < ParameterLink<double>> moveRateCatPL;
-		static std::shared_ptr < ParameterLink<double>> moveRateDogPL;
-		static std::shared_ptr < ParameterLink<int>> startingLockLengthCatPL;
-		static std::shared_ptr < ParameterLink<int>> startingLockLengthDogPL;
-		static std::shared_ptr < ParameterLink<int>> startingKeyLengthFleaPL;
-		static std::shared_ptr < ParameterLink<double>> requiredMatchLengthCatPL;
-		static std::shared_ptr < ParameterLink<double>> requiredMatchLengthDogPL;
-		static std::shared_ptr < ParameterLink<double>> resourcesLostToFleasCatPL;
-		static std::shared_ptr < ParameterLink<double>> resourcesLostToFleasDogPL;
+		void reset(int x, int y) {
+			R = y;
+			C = x;
+			data.clear();
+			data.resize(R * C);
+		}
 
-		double mutationPointCat;
-		double mutationSizeCat;
-		double mutationPointDog;
-		double mutationSizeDog;
-		double mutationPointFlea;
-		double mutationSizeFlea;
-		int reproductionThresholdCat;
-		int reproductionThresholdDog;
-		double reproductionThresholdFlea;
-		double turnRateCat;
-		double turnRateDog;
-		double moveRateCat;
-		double moveRateDog;
-		int startingLockLengthCat;
-		int startingLockLengthDog;
-		int startingKeyLengthFlea;
-		double requiredMatchLengthCat;
-		double requiredMatchLengthDog;
-		double resourcesLostToFleasCat;
-		double resourcesLostToFleasDog;
+		void reset(int x, int y, T value) {
+			R = y;
+			C = x;
+			data.clear();
+			data.resize(R * C, value);
+		}
 
-		static std::shared_ptr < ParameterLink<int>> recordImageStepPL;
-		int recordImageStep;
-		static std::shared_ptr < ParameterLink<int>> recordWorldStateStepPL;
-		int recordWorldStateStep;
-		static std::shared_ptr < ParameterLink<bool>> worldWrapsPL;
-		bool worldWraps;
-
-		enum class HostTag { noTag, catTag, dogTag };
-
-		// Vector2d is wraps a vector<T> and provides x,y style access
-		// no error checking is provided for out of range errors
-		// internally this class uses R(ow) and C(olumn) (i.e. how the data is stored in the data vector)
-		// the user sees x,y where x = column, y = row
-		template <typename T> class Vector2d {
-			std::vector<T> data;
-			int R, C;
-
-			// get index into data vector for a given x,y
-			inline int getIndex(int r, int c) { return (r * C) + c; }
-
-			public:
-			Vector2d() {
-				R = 0;
-				C = 0;
+		// overwrite this classes data (vector<T>) with data coppied from newData
+		void assign(std::vector<T> newData) {
+			if ((int)newData.size() != R * C) {
+				std::cout << "  ERROR :: in Vector2d::assign() vector provided does not "
+					"fit. provided vector is size "
+					<< newData.size() << " but Rows(" << R << ") * Columns(" << C
+					<< ") == " << R * C << ". Exitting." << std::endl;
+				exit(1);
 			}
-			// construct a vector of size x * y
-			Vector2d(int x, int y) : R(y), C(x) { data.resize(R * C); }
+			data = newData;
+		}
 
-			Vector2d(int x, int y, T value) : R(y), C(x) { data.resize(R * C, value); }
+		// provides access to value x,y can be l-value or r-value (i.e. used for
+		// lookup of assignment)
+		T& operator()(int x, int y) { return data[getIndex(y, x)]; }
 
-			void reset(int x, int y) {
-				R = y;
-				C = x;
-				data.clear();
-				data.resize(R * C);
-			}
+		T& operator()(double x, double y) {
+			return data[getIndex((int)(y), (int)(x))];
+		}
 
-			void reset(int x, int y, T value) {
-				R = y;
-				C = x;
-				data.clear();
-				data.resize(R * C, value);
-			}
+		T& operator()(std::pair<int, int> loc) {
+			return data[getIndex(loc.second, loc.first)];
+		}
 
-			// overwrite this classes data (vector<T>) with data coppied from newData
-			void assign(std::vector<T> newData) {
-				if ((int)newData.size() != R * C) {
-					std::cout << "  ERROR :: in Vector2d::assign() vector provided does not "
-						"fit. provided vector is size "
-						<< newData.size() << " but Rows(" << R << ") * Columns(" << C
-						<< ") == " << R * C << ". Exitting." << std::endl;
-					exit(1);
+		T& operator()(std::pair<double, double> loc) {
+			return data[getIndex((int)(loc.second), (int)(loc.first))];
+		}
+
+		// show the contents of this Vector2d with index values, and x,y values
+		void show() {
+			for (int r = 0; r < R; r++) {
+				for (int c = 0; c < C; c++) {
+					std::cout << getIndex(r, c) << " : " << c << "," << r << " : "
+						<< data[getIndex(r, c)] << "\n";
 				}
-				data = newData;
 			}
+		}
 
-			// provides access to value x,y can be l-value or r-value (i.e. used for
-			// lookup of assignment)
-			T& operator()(int x, int y) { return data[getIndex(y, x)]; }
-
-			T& operator()(double x, double y) {
-				return data[getIndex((int)(y), (int)(x))];
-			}
-
-			T& operator()(std::pair<int, int> loc) {
-				return data[getIndex(loc.second, loc.first)];
-			}
-
-			T& operator()(std::pair<double, double> loc) {
-				return data[getIndex((int)(loc.second), (int)(loc.first))];
-			}
-
-			// show the contents of this Vector2d with index values, and x,y values
-			void show() {
+		// show the contents of this Vector2d in a grid
+		void showGrid(int precision = -1) {
+			if (precision < 0) {
 				for (int r = 0; r < R; r++) {
 					for (int c = 0; c < C; c++) {
-						std::cout << getIndex(r, c) << " : " << c << "," << r << " : "
-							<< data[getIndex(r, c)] << "\n";
+						std::cout << data[getIndex(r, c)] << " ";
 					}
+					std::cout << "\n";
 				}
 			}
-
-			// show the contents of this Vector2d in a grid
-			void showGrid(int precision = -1) {
-				if (precision < 0) {
-					for (int r = 0; r < R; r++) {
-						for (int c = 0; c < C; c++) {
-							std::cout << data[getIndex(r, c)] << " ";
+			else {
+				for (int r = 0; r < R; r++) {
+					for (int c = 0; c < C; c++) {
+						if (data[getIndex(r, c)] == 0) {
+							std::cout << std::setfill(' ') << std::setw((precision * 2) + 2)
+								<< " ";
 						}
-						std::cout << "\n";
-					}
-				}
-				else {
-					for (int r = 0; r < R; r++) {
-						for (int c = 0; c < C; c++) {
-							if (data[getIndex(r, c)] == 0) {
-								std::cout << std::setfill(' ') << std::setw((precision * 2) + 2)
-									<< " ";
-							}
-							else {
-								std::cout << std::setfill(' ') << std::setw((precision * 2) + 1)
-									<< std::fixed << std::setprecision(precision)
-									<< data[getIndex(r, c)] << " ";
-							}
+						else {
+							std::cout << std::setfill(' ') << std::setw((precision * 2) + 1)
+								<< std::fixed << std::setprecision(precision)
+								<< data[getIndex(r, c)] << " ";
 						}
-						std::cout << "\n";
 					}
+					std::cout << "\n";
 				}
 			}
-			int x() { return C; }
+		}
+		int x() { return C; }
 
-			int y() { return R; }
-		};
+		int y() { return R; }
+	};
 
-
-		class Parasite {
-			public:
-				std::shared_ptr<Organism> org;
-				int timeOfDeath;
-
-				double resource = 0;
-				std::vector<bool> bitstring;
-
-				Parasite() = delete;
-				Parasite(std::shared_ptr<Organism> org_) : org(org_) {
-					// FIX ME add parameters
-					timeOfDeath = Random::getInt(Global::update + 20, Global::update + 30);
-				}
-
-				void mutate(double point, double size) {
-					// Find out how many flips to flip
-					int num = Random::getBinomial(bitstring.size(), point);
-					for(int j=0; j<num; ++j){
-						int index = Random::getInt(bitstring.size());
-						bitstring[index] = !bitstring[index];
-					} 		
-				}
-
-				void show() {
-					std::cout << "     parasite org ID: " << org->ID << "   resource: " << resource << std::endl;
-				}
-
-				void show_infection(){
-					std::cout << "\tHost org ID: " << org->ID << " is a parasite with key " << get_bitstring() << std::endl;
-				}
-
-				std::string get_bitstring(){
-					std::string repr;
-					for(auto i=bitstring.begin(); i<bitstring.end(); ++i){
-						repr += (*i == true) ? "1":"0";
-					}
-					return repr;
-				}
-		};
-
-		class Host {
-			public:
-				std::shared_ptr<Organism> org;
-				std::vector<std::shared_ptr<Parasite>> parasites;
-				std::vector<bool> bitstring;
-
-				int timeOfDeath;
-				int x, y;
-				int direction;
-				double resource = 0;
-
-				HostTag tag;
-
-				Host() = delete;
-				Host(std::shared_ptr<Organism> org_, HostTag tag_, int x_ = 0, int y_ = 0, int direction_ = 0) : org(org_), tag(tag_), x(x_), y(y_), direction(direction_) {
-					// Add min and max lifespans
-					timeOfDeath = Random::getInt(Global::update + 20, Global::update + 30);
-				}
-
-				void mutate(double point, double size) {
-					//std::cout << "Tag: " << (int)tag << " mutating." << std::endl;
-					//if(tag == HostTag::dogTag)
-					//	std::cout << "\t" << point << ", " << size << "." << std::endl;
-					// Find out how many flips to flip
-					int num = Random::getBinomial(bitstring.size(), point);
-					for(int j=0; j<num; ++j){
-						int index = Random::getInt(bitstring.size());
-						bitstring[index] = !bitstring[index];
-					} 		
-				}
-
-				void show() {
-					std::cout << "   host org ID: " << org->ID << "  tag: " << static_cast<std::underlying_type<HostTag>::type>(tag) << "   loc: " << x << ", " << y << " direction: " << direction << "   resource: " << resource << std::endl;
-					for (auto p : parasites) {
-						p->show();
-					}
-				}
-
-				void show_infection(){
-					std::cout << "\tHost org ID: " << org->ID << " with tag: " << static_cast<std::underlying_type<HostTag>::type>(tag);
-					if(tag == HostTag::catTag){
-						std::cout << "(Cat) ";
-					} else {
-						std::cout << "(Dog) ";
-					}
-					std::cout << " has lock " << get_bitstring() << std::endl;
-				}
-
-				std::string get_bitstring(){
-					std::string repr;
-					for(auto i=bitstring.begin(); i<bitstring.end(); ++i){
-						repr += (*i == true) ? "1":"0";
-					}
-					return repr;
-				}
-		};
-
-		class Location {
-			public:
-				std::vector< std::shared_ptr<Host>> hosts; // hosts at this location
-		};
-
-
-		std::set<std::shared_ptr<Host>> catKillList;
-		std::set<std::shared_ptr<Host>> dogKillList;
-		std::set<std::shared_ptr<Parasite>> fleaKillList;
-
-		std::vector<std::shared_ptr<Organism>> newPop;
-
-
-		Vector2d<Location> world;
-
-		std::shared_ptr<Host> garbageDog;
-		std::shared_ptr<Host> garbageCat;
-		std::shared_ptr<Host> garbageFlea;
-
-		std::vector<std::shared_ptr<Host>> dogs;
-		std::vector<std::shared_ptr<Host>> cats;
-		std::vector<std::shared_ptr<Parasite>> fleas;
-
-
-		int dx[8] = { 0,1,1,1,0,-1,-1,-1 }; // dx and dy provide movement for each of 8 directions.
-		int dy[8] = { 1,1,0,-1,-1,-1,0,1 };
-
-		void moveInWorld(std::shared_ptr<Host> h) {
-			int destX = h->x + dx[h->direction]; // where will h be if they move in the direction they are facing?
-			int destY = h->y + dy[h->direction];
-			bool canMove = true;
-			if (destX < 0 || destY < 0 || destX >= worldX || destY >= worldY){ // if the new location is off the world...
-				if (worldWraps) {
-					destX = loopMod(destX, worldX); // teleport acoss world!
-					destY = loopMod(destY, worldY);
-				}
-				else { // h is stuck on a wall
-					canMove = false;
-				}
-			}
-			if (canMove) {
-				//std::cout << "can move! " << h->x << ", " << h->y << "  --> " << destX << ", " << destY << std::endl;
-				world(destX, destY).hosts.push_back(h); // add to new location
-				world(h->x, h->y).hosts.erase(find(world(h->x, h->y).hosts.begin(), world(h->x, h->y).hosts.end(), h)); // remove from old location
-				h->x = destX; // update h's own location
-				h->y = destY;
-				//std::cout << "did move. " << h->x << ", " << h->y << "  --> " << destX << ", " << destY << std::endl;
-			}
-
+	double percentMatch(const std::vector<bool>& key, const std::vector<bool>& lock, std::vector<double> & scores) {
+		int keySize = key.size();
+		int lockSize = lock.size();
+		if (keySize == 0 || keySize < lockSize) {
+			return scores.back();
+		}
+		if (lockSize == 0) {
+			return 1.0;
 		}
 
-		//void saveWorldImage();
+		int max = 0;
 
-		double vectAve(std::vector<double> vect) {
-			return std::accumulate(vect.begin(), vect.end(), 0.0) / static_cast<double>(vect.size());
+		for (int kstart = 0; kstart < keySize - (lockSize - 1); ++kstart) {
+			int matches = 0;
+			for (int l = 0; l < lockSize; ++l) {
+				matches += key[kstart + l] == lock[l];
+			}
+			max = std::max(max, matches);
+		}
+		if (scores.size() < lockSize) {
+			std::vector<double> emptyVect((lockSize - scores.size()) + 1, scores.back());
+			scores.insert(scores.end(), emptyVect.begin(), emptyVect.end());
+		}
+		return scores[lockSize - max]; // if all are correct return scores[0]
+	}
+
+	std::string serializeGenome(std::vector<bool> genome) {
+		std::string s = "";
+		for (auto v : genome) {
+			s += std::to_string(v);
+		}
+		return s;
+	}
+
+
+	std::vector<bool> getBitString(int length, bool randomize) {
+		std::vector<bool> bitstring = std::vector<bool>(length,0);
+		if (randomize) {
+			for (int i = 0; i < length; ++i) {
+				bitstring[i] = Random::getInt(1);
+			}
+		}
+		return(bitstring);
+	}
+
+	// given a vector<bool> apply point mutations at a persite rate of point,
+	// and insertion/deletion at a rate of size
+	void mutateBitString(std::vector<bool>& bitstring, double point, double size) {
+		// Find out how many flips to flip
+		//int num = Random::getBinomial(bitstring.size(), point);
+		int num = Random::getBinomial(1, point);
+		for (int j = 0; j < num; ++j) {
+			int index = Random::getIndex(bitstring.size());
+			//std::cout << "  point: " << index << " " << j << std::endl;
+			bitstring[index] = !bitstring[index];
+		}
+		//num = Random::getBinomial(bitstring.size(), size);
+		num = Random::getBinomial(1, size);
+		for (int j = 0; j < num; ++j) {
+			if (Random::P(mutationEraseRate)) {
+				//std::cout << "  erase: " << j << std::endl;
+				bitstring.erase(bitstring.begin() + Random::getIndex(bitstring.size()));
+			}
+			else {
+				//std::cout << "  insert: " << j << std::endl;
+				bitstring.insert(bitstring.begin() + Random::getIndex(bitstring.size()+1), Random::getInt(0, 1));
+			}
+		}
+	}
+
+	class Parasite {
+	public:
+		static std::shared_ptr < ParameterLink<double>> fleaLifeMinPL;
+		static std::shared_ptr < ParameterLink<double>> fleaLifeMaxPL;
+
+		std::shared_ptr<Organism> org;
+		int timeOfDeath;
+
+		double resource = 0;
+		std::vector<bool> bitstring;
+
+		Parasite() = delete;
+		Parasite(std::shared_ptr<Organism> org_) : org(org_) {
+			timeOfDeath = Random::getInt(Global::update + fleaLifeMinPL->get(), Global::update + fleaLifeMaxPL->get());
 		}
 
-		// used when creating visualizations
-		std::string visualizeData;
+		void show() {
+			std::cout << "     parasite org ID: " << org->ID << "   resource: " << resource << std::endl;
+		}
 
-		double ave_fleas( std::vector<std::shared_ptr<Host>> hosts);
-		HHPWorld(std::shared_ptr<ParametersTable> PT_ = nullptr);
-		virtual ~HHPWorld() = default;
+		void show_infection() {
+			std::cout << "\tHost org ID: " << org->ID << " is a parasite with key " << get_bitstring() << std::endl;
+		}
 
-		void killHost(std::shared_ptr<Host>& host,
-				std::vector<std::shared_ptr<Host>>& hosts, 
-				std::set<std::shared_ptr<Host>>& killList);
+		std::string get_bitstring() {
+			std::string repr;
+			for (auto i = bitstring.begin(); i < bitstring.end(); ++i) {
+				repr += (*i == true) ? "1" : "0";
+			}
+			return repr;
+		}
+	};
 
-		void killParasite(std::shared_ptr<Parasite>& parasite,
-				std::shared_ptr<Host>& host,
-				std::vector<std::shared_ptr<Parasite>>& parasites,
-				std::set<std::shared_ptr<Parasite>>& killList);
+	class Host {
+	public:
 
-		std::shared_ptr<Host> createCat(std::shared_ptr<Organism>& org, int x = -1, int y = -1, int direction = -1, bool initGenome = true);
-		std::shared_ptr<Host> createDog(std::shared_ptr<Organism>& org, int x = -1, int y = -1, int direction = -1, bool initGenome = true);
-		std::shared_ptr<Parasite> createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>& host, bool initGenome = true);
+		static std::shared_ptr < ParameterLink<double>> catLifeMinPL;
+		static std::shared_ptr < ParameterLink<double>> catLifeMaxPL;
+		static std::shared_ptr < ParameterLink<double>> dogLifeMinPL;
+		static std::shared_ptr < ParameterLink<double>> dogLifeMaxPL;
 
-		void birthCat(std::shared_ptr<Host>& parent,int x = -1, int y = -1, int direction = -1);
-		void birthDog(std::shared_ptr<Host>& parent, int x = -1, int y = -1, int direction = -1);
-		void birthFlea(std::shared_ptr<Parasite>& parent, std::shared_ptr<Host>& host);
+		std::shared_ptr<Organism> org;
+		std::vector<std::shared_ptr<Parasite>> parasites;
+		std::vector<bool> bitstring;
 
-		void killCat(std::shared_ptr<Host>& cat);
-		void killDog(std::shared_ptr<Host>& dog);
-		void killFlea(std::shared_ptr<Parasite>& flea, std::shared_ptr<Host>& host);
+		int timeOfDeath = 0;
+		int x, y;
+		int direction;
+		double resource = 0;
 
-		void jumpFlea(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2); // jump flea from h1 to h2 (if h1 has fleas)
-		void setupPopulations(std::map<std::string, std::shared_ptr<Group>>& groups,
-				int analyze, int visualize, int debug);
+		HostTag tag;
 
-		void updateHosts(std::vector < std::shared_ptr<Host>> hostList);
+		Host() = delete;
+		Host(std::shared_ptr<Organism> org_, HostTag tag_, int x_ = 0, int y_ = 0, int direction_ = 0) : org(org_), tag(tag_), x(x_), y(y_), direction(direction_) {
 
-		void evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
-				int analyze, int visualize, int debug);
+			if (tag == HostTag::catTag) {
+				timeOfDeath = Random::getInt(Global::update + catLifeMinPL->get(), Global::update + catLifeMaxPL->get());
+			}
+			if (tag == HostTag::dogTag) {
+				timeOfDeath = Random::getInt(Global::update + dogLifeMinPL->get(), Global::update + dogLifeMaxPL->get());
+			}
+		}
 
-		virtual std::unordered_map<std::string, std::unordered_set<std::string>>
-			requiredGroups() override;
+		void show() {
+			std::cout << "   host org ID: " << org->ID << "  tag: " << static_cast<std::underlying_type<HostTag>::type>(tag) << "   loc: " << x << ", " << y << " direction: " << direction << "   resource: " << resource << std::endl;
+			for (auto p : parasites) {
+				p->show();
+			}
+		}
+
+		void show_infection() {
+			std::cout << "\tHost org ID: " << org->ID << " with tag: " << static_cast<std::underlying_type<HostTag>::type>(tag);
+			if (tag == HostTag::catTag) {
+				std::cout << "(Cat) ";
+			}
+			else {
+				std::cout << "(Dog) ";
+			}
+			std::cout << " has lock " << get_bitstring() << std::endl;
+		}
+
+		std::string get_bitstring() {
+			std::string repr;
+			for (auto i = bitstring.begin(); i < bitstring.end(); ++i) {
+				repr += (*i == true) ? "1" : "0";
+			}
+			return repr;
+		}
+	};
+
+	class Location {
+	public:
+		std::vector< std::shared_ptr<Host>> hosts; // hosts at this location
+		int catCount = 0;
+		int dogCount = 0;
+	};
+
+
+	std::set<std::shared_ptr<Host>> catKillList;
+	std::set<std::shared_ptr<Host>> dogKillList;
+	std::set<std::shared_ptr<Parasite>> fleaKillList;
+
+	std::vector<std::shared_ptr<Organism>> newPop;
+
+
+	Vector2d<Location> world;
+
+	std::shared_ptr<Host> garbageDog;
+	std::shared_ptr<Host> garbageCat;
+	std::shared_ptr<Host> garbageFlea;
+
+	std::vector<std::shared_ptr<Host>> dogs;
+	std::vector<std::shared_ptr<Host>> cats;
+	std::vector<std::shared_ptr<Parasite>> fleas;
+
+
+	int catBirths = 0;
+	int dogBirths = 0;
+	int fleaBirths = 0;
+	int catDeaths = 0;
+	int dogDeaths = 0;
+	int fleaDeaths = 0;
+	int fleasInherited = 0;
+	int fleaJumps = 0;
+
+	int dx[8] = { 0,1,1,1,0,-1,-1,-1 }; // dx and dy provide movement for each of 8 directions.
+	int dy[8] = { 1,1,0,-1,-1,-1,0,1 };
+
+	void moveInWorld(std::shared_ptr<Host> h) {
+		int destX = h->x + dx[h->direction]; // where will h be if they move in the direction they are facing?
+		int destY = h->y + dy[h->direction];
+		bool canMove = true;
+		if (destX < 0 || destY < 0 || destX >= worldX || destY >= worldY) { // if the new location is off the world...
+			if (worldWraps) {
+				destX = loopMod(destX, worldX); // teleport acoss world!
+				destY = loopMod(destY, worldY);
+			}
+			else { // h is stuck on a wall
+				canMove = false;
+			}
+		}
+		if (canMove) {
+			if (h->tag == HostTag::catTag) {
+				world(h->x, h->y).catCount--;
+				world(destX, destY).catCount++;
+			}
+			if (h->tag == HostTag::dogTag) {
+				world(h->x, h->y).dogCount--;
+				world(destX, destY).dogCount++;
+			}
+			//std::cout << "can move! direction: " << h->direction << "  " << h->x << ", " << h->y << "  --> " << destX << ", " << destY << std::endl;
+			world(destX, destY).hosts.push_back(h); // add to new location
+			world(h->x, h->y).hosts.erase(find(world(h->x, h->y).hosts.begin(), world(h->x, h->y).hosts.end(), h)); // remove from old location
+			h->x = destX; // update h's own location
+			h->y = destY;
+			//std::cout << "did move. " << h->x << ", " << h->y << "  --> " << destX << ", " << destY << std::endl;
+		}
+
+	}
+
+	//void saveWorldImage();
+
+	double vectAve(std::vector<double> vect) {
+		return std::accumulate(vect.begin(), vect.end(), 0.0) / static_cast<double>(vect.size());
+	}
+
+	// used when creating visualizations
+	std::string visualizeData;
+
+	double ave_fleas(std::vector<std::shared_ptr<Host>> hosts);
+	HHPWorld(std::shared_ptr<ParametersTable> PT_ = nullptr);
+	virtual ~HHPWorld() = default;
+
+	void killHost(std::shared_ptr<Host>& host,
+		std::vector<std::shared_ptr<Host>>& hosts,
+		std::set<std::shared_ptr<Host>>& killList);
+
+	void killParasite(std::shared_ptr<Parasite>& parasite,
+		std::shared_ptr<Host>& host,
+		std::vector<std::shared_ptr<Parasite>>& parasites,
+		std::set<std::shared_ptr<Parasite>>& killList);
+
+	void createCat(std::shared_ptr<Organism>& org, int x = -1, int y = -1, int direction = -1, bool initGenome = true);
+	void createDog(std::shared_ptr<Organism>& org, int x = -1, int y = -1, int direction = -1, bool initGenome = true);
+	void createFlea(std::shared_ptr<Organism>& org, std::shared_ptr<Host>& host, bool initGenome = true);
+
+	void birthCat(std::shared_ptr<Host>& parent, int x = -1, int y = -1, int direction = -1);
+	void birthDog(std::shared_ptr<Host>& parent, int x = -1, int y = -1, int direction = -1);
+	void birthFlea(std::shared_ptr<Parasite>& parent, std::shared_ptr<Host>& host);
+
+	void killCat(std::shared_ptr<Host>& cat);
+	void killDog(std::shared_ptr<Host>& dog);
+	void killFlea(std::shared_ptr<Parasite>& flea, std::shared_ptr<Host>& host);
+
+	void jumpFleas(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2, double percent = -1.0);
+	void migrateParasites(std::vector<std::shared_ptr<Host>> & hosts);
+
+	void setupPopulations(std::map<std::string, std::shared_ptr<Group>>& groups,
+		int analyze, int visualize, int debug);
+
+	void updateHosts(std::vector < std::shared_ptr<Host>> hostList);
+
+	void evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
+		int analyze, int visualize, int debug);
+
+	virtual std::unordered_map<std::string, std::unordered_set<std::string>>
+		requiredGroups() override;
+
+
+	void testPercentMatch(std::vector<bool> key, std::vector<bool> lock, std::vector<double>& scores) {
+		
+		std::cout << "scores: ";
+		for (auto x : scores) {
+			std::cout << x << ",";
+		}
+		std::cout << "\n     key: ";
+		for (auto x : key) {
+			std::cout << x << ",";
+		}
+		std::cout << "\n    lock: ";
+		for (auto x : lock) {
+			std::cout << x << ",";
+		}
+		std::cout << "\n    -> " << percentMatch(key, lock, scores) << std::endl;
+	}
+
+	void tests() {
+		std::vector<bool> lock;
+		std::vector<bool> key;
+
+		scoreList = { 1,.5 };
+		lock = { 0,0,0 };
+		key = { 0,0,0 };
+		testPercentMatch(key, lock, scoreList);
+		lock = { 0,0,0 };
+		key = { 1,0,0 };
+		testPercentMatch(key, lock, scoreList);
+		lock = { 0,0,0 };
+		key = { 1,1,0 };
+		testPercentMatch(key, lock, scoreList);
+		lock = { 0,0,0 };
+		key = { 1,1,1 };
+		testPercentMatch(key, lock, scoreList);
+		scoreList = { 1,0,0,0 };
+		testPercentMatch(key, lock, scoreList);
+
+		exit(1);
+	}
 };
 
