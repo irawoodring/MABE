@@ -601,6 +601,9 @@ void HHPWorld::updateHosts(std::vector < std::shared_ptr<Host>> hostList) {
 // jump flea from h1 to h2 (if h1 has fleas)
 // percent determins what percent of h1s fleas jump to h2. if < 0 (default) one will jump.
 void HHPWorld::jumpFleas(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2, double moveRate) {
+	if(Global::update < 100 && h2->tag == HostTag::dogTag){
+		return;
+	}
 	int numberToJumpFrom1;
 	int numberToJumpFrom2;
 
