@@ -18,6 +18,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include <sstream>
+
 #include <vector>
 
 class HHPWorld : public AbstractWorld {
@@ -31,6 +33,7 @@ public:
 	static std::shared_ptr < ParameterLink<std::string>> scoreListPL;
 
 	static std::shared_ptr < ParameterLink<int>> cullParasitesToPL;
+
 
 	static std::shared_ptr < ParameterLink<double>> mutationEraseRatePL;
 	static std::shared_ptr < ParameterLink<double>> mutationPointCatPL;
@@ -46,9 +49,12 @@ public:
 	static std::shared_ptr < ParameterLink<double>> turnRateDogPL;
 	static std::shared_ptr < ParameterLink<double>> moveRateCatPL;
 	static std::shared_ptr < ParameterLink<double>> moveRateDogPL;
-	static std::shared_ptr < ParameterLink<int>> startingLockLengthCatPL;
-	static std::shared_ptr < ParameterLink<int>> startingLockLengthDogPL;
-	static std::shared_ptr < ParameterLink<int>> startingKeyLengthFleaPL;
+	static std::shared_ptr < ParameterLink<int>> initCatLockLengthPL;
+	static std::shared_ptr < ParameterLink<int>> initDogLockLengthPL;
+	static std::shared_ptr < ParameterLink<int>> initFleaKeyLengthPL;
+	static std::shared_ptr < ParameterLink<std::string>> initCatLockPL;
+	static std::shared_ptr < ParameterLink<std::string>> initDogLockPL;
+	static std::shared_ptr < ParameterLink<std::string>> initFleaKeyPL;
 
 	static std::shared_ptr < ParameterLink<double>> catFleaFeedAmtPL;
 	static std::shared_ptr < ParameterLink<double>> dogFleaFeedAmtPL;
@@ -58,11 +64,13 @@ public:
 	static std::shared_ptr < ParameterLink<double>> dogParasiteInheritancePL;
 	static std::shared_ptr < ParameterLink<double>> resourceInflowPL;
 
-	static std::shared_ptr < ParameterLink<double>> contactRatePL;
+	static std::shared_ptr < ParameterLink<std::string>> contactRateInSpeciesPL;
+	static std::shared_ptr < ParameterLink<std::string>> contactRateAcrossSpeciesPL;
 	static std::shared_ptr < ParameterLink<double>> transferRatePL;
 
-	static std::shared_ptr < ParameterLink<bool>> isolateHostsPL;
-	bool isolateHosts;
+	static std::shared_ptr < ParameterLink<double>> HostParasiteRelationshipPL;
+
+	static std::shared_ptr < ParameterLink<double>> ParasitesStartOnCatsPL;
 
 	double mutationEraseRate;
 
@@ -79,9 +87,6 @@ public:
 	double turnRateDog;
 	double moveRateCat;
 	double moveRateDog;
-	int startingLockLengthCat;
-	int startingLockLengthDog;
-	int startingKeyLengthFlea;
 
 	double catFleaFeedAmt;
 	double dogFleaFeedAmt;
@@ -89,8 +94,16 @@ public:
 	double dogMaxToShareWithFleas;
 
 	double resourceInflow;
-	double contactRate = .5;
-	double transferRate = .1;
+	std::vector<double> contactRateInSpeciesList;
+	std::vector<double> contactRateAcrossSpeciesList;
+	std::vector<int> contactRateInSpeciesTimesList;
+	std::vector<int> contactRateAcrossSpeciesTimesList;
+	double contactRateInSpecies;
+	double contactRateAcrossSpecies;
+
+	double transferRate;
+
+	double HostParasiteRelationship;
 
 	static std::shared_ptr < ParameterLink<int>> recordImageStepPL;
 	int recordImageStep;
@@ -215,14 +228,14 @@ public:
 		int y() { return R; }
 	};
 
-	double percentMatch(const std::vector<bool>& key, const std::vector<bool>& lock, std::vector<double> & scores) {
+	double percentMatch(const std::vector<bool>& key, const std::vector<bool>& lock, std::vector<double>& scores) {
 		int keySize = key.size();
 		int lockSize = lock.size();
 		if (keySize == 0 || keySize < lockSize) {
 			return scores.back();
 		}
 		if (lockSize == 0) {
-			return 1.0;
+			return scores[0];
 		}
 
 		int max = 0;
@@ -250,14 +263,20 @@ public:
 	}
 
 
-	std::vector<bool> getBitString(int length, bool randomize) {
-		std::vector<bool> bitstring = std::vector<bool>(length,0);
-		if (randomize) {
+	std::vector<bool> getBitString(int length, std::string init = "all_0") {
+		if (init == "all_0") {
+			return std::vector<bool>(length, 0);
+		}
+		if (init == "all_1") {
+			return std::vector<bool>(length, 1);
+		}
+		if (init == "random") {
+			std::vector<bool> bitstring(length);
 			for (int i = 0; i < length; ++i) {
 				bitstring[i] = Random::getInt(1);
 			}
+			return(bitstring);
 		}
-		return(bitstring);
 	}
 
 	// given a vector<bool> apply point mutations at a persite rate of point,
@@ -265,22 +284,32 @@ public:
 	void mutateBitString(std::vector<bool>& bitstring, double point, double size) {
 		// Find out how many flips to flip
 		//int num = Random::getBinomial(bitstring.size(), point);
-		int num = Random::getBinomial(1, point);
-		for (int j = 0; j < num; ++j) {
+		while (Random::P(point)) {
 			int index = Random::getIndex(bitstring.size());
-			//std::cout << "  point: " << index << " " << j << std::endl;
 			bitstring[index] = !bitstring[index];
 		}
+
 		//num = Random::getBinomial(bitstring.size(), size);
-		num = Random::getBinomial(1, size);
-		for (int j = 0; j < num; ++j) {
+		while (Random::P(size)) {
 			if (Random::P(mutationEraseRate)) {
-				//std::cout << "  erase: " << j << std::endl;
-				bitstring.erase(bitstring.begin() + Random::getIndex(bitstring.size()));
+				if (bitstring.size() > 3) {
+					if (Random::P(.5)) { // delete from begining
+						bitstring.erase(bitstring.begin());
+					}
+					else { // delete from end
+						bitstring.erase(bitstring.end());
+					}
+					bitstring.erase(bitstring.begin() + Random::getIndex(bitstring.size()));
+				}
 			}
 			else {
-				//std::cout << "  insert: " << j << std::endl;
-				bitstring.insert(bitstring.begin() + Random::getIndex(bitstring.size()+1), Random::getInt(0, 1));
+				if (Random::P(.5)) { // insert at begining
+					bitstring.insert(bitstring.begin(), Random::getInt(0, 1));
+				}
+				else { // insert at end
+					bitstring.insert(bitstring.end(), Random::getInt(0, 1));
+				}
+
 			}
 		}
 	}
@@ -295,6 +324,12 @@ public:
 
 		double resource = 0;
 		std::vector<bool> bitstring;
+
+		double collectedResource = 0;
+		double bitStringMatch = 0;
+
+		HostTag hostTag = HostTag::catTag;
+		int hostID = -1;
 
 		Parasite() = delete;
 		Parasite(std::shared_ptr<Organism> org_) : org(org_) {
@@ -334,6 +369,10 @@ public:
 		int x, y;
 		int direction;
 		double resource = 0;
+
+		double collectedResource = 0;
+		double theft = 0;
+		double bitStringMatch = 0;
 
 		HostTag tag;
 
@@ -409,6 +448,7 @@ public:
 	int fleaDeaths = 0;
 	int fleasInherited = 0;
 	int fleaJumps = 0;
+	int fleaJumpsAcross = 0;
 
 	int dx[8] = { 0,1,1,1,0,-1,-1,-1 }; // dx and dy provide movement for each of 8 directions.
 	int dy[8] = { 1,1,0,-1,-1,-1,0,1 };
@@ -479,8 +519,8 @@ public:
 	void killDog(std::shared_ptr<Host>& dog);
 	void killFlea(std::shared_ptr<Parasite>& flea, std::shared_ptr<Host>& host);
 
-	void jumpFleas(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2, double percent = -1.0);
-	void migrateParasites(std::vector<std::shared_ptr<Host>> & hosts);
+	void jumpFleas(std::shared_ptr<Host> h1, std::shared_ptr<Host> h2, double moveRate = -1.0);
+	void migrateParasites(std::vector<std::shared_ptr<Host>>& hosts, double localContactRate);
 
 	void setupPopulations(std::map<std::string, std::shared_ptr<Group>>& groups,
 		int analyze, int visualize, int debug);
@@ -495,7 +535,7 @@ public:
 
 
 	void testPercentMatch(std::vector<bool> key, std::vector<bool> lock, std::vector<double>& scores) {
-		
+
 		std::cout << "scores: ";
 		for (auto x : scores) {
 			std::cout << x << ",";
