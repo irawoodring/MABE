@@ -29,23 +29,23 @@ std::shared_ptr < ParameterLink<double>> HHPWorld::mutationEraseRatePL =
 Parameters::register_parameter("WORLD_HHP_TUNING-mutationEraseRate", 0.75,
 		"when genomes experiance insertion/deletion mutations, they will delete at this rate");
 
-std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointCatPL = 
-Parameters::register_parameter("WORLD_HHP_MUTATION-mutationPointCat", 0.0005,
+std::shared_ptr < ParameterLink<std::string>> HHPWorld::mutationPointCatPL = 
+Parameters::register_parameter("WORLD_HHP_MUTATION-mutationPointCat", (std::string)"0X0.005",
 		"the point flip per site mutation rate");
-std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeCatPL = 
-Parameters::register_parameter("WORLD_HHP_MUTATION-mutationSizeCat", 0.001,
+std::shared_ptr < ParameterLink<std::string>> HHPWorld::mutationSizeCatPL =
+Parameters::register_parameter("WORLD_HHP_MUTATION-mutationSizeCat", (std::string)"0X0",
 		"the insertion/deletion per site mutation rate");
-std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointDogPL =
-Parameters::register_parameter("WORLD_HHP_MUTATION-mutationPointDog", 0.0005,
+std::shared_ptr < ParameterLink<std::string>> HHPWorld::mutationPointDogPL =
+Parameters::register_parameter("WORLD_HHP_MUTATION-mutationPointDog", (std::string)"0X0.005",
 		"the point flip per site mutation rate");
-std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeDogPL =
-Parameters::register_parameter("WORLD_HHP_MUTATION-mutationSizeDog", 0.001,
+std::shared_ptr < ParameterLink<std::string>> HHPWorld::mutationSizeDogPL =
+Parameters::register_parameter("WORLD_HHP_MUTATION-mutationSizeDog", (std::string)"0X0",
 		"the point insertion/deletion per site mutation rate");
-std::shared_ptr < ParameterLink<double>> HHPWorld::mutationPointFleaPL =
-Parameters::register_parameter("WORLD_HHP_MUTATION-mutationPointFlea", 0.0005,
+std::shared_ptr < ParameterLink<std::string>> HHPWorld::mutationPointFleaPL =
+Parameters::register_parameter("WORLD_HHP_MUTATION-mutationPointFlea", (std::string)"0X.025",
 		"the point flip per site mutation rate");
-std::shared_ptr < ParameterLink<double>> HHPWorld::mutationSizeFleaPL =
-Parameters::register_parameter("WORLD_HHP_MUTATION-mutationSizeFlea", 0.001,
+std::shared_ptr < ParameterLink<std::string>> HHPWorld::mutationSizeFleaPL =
+Parameters::register_parameter("WORLD_HHP_MUTATION-mutationSizeFlea", (std::string)"0X.01",
 		"the point insertion/deletion per site mutation rate");
 std::shared_ptr < ParameterLink<double>> HHPWorld::reproductionThresholdCatPL =
 Parameters::register_parameter("WORLD_HHP_CATS-reproductionThresholdCat", 150.0,
@@ -171,12 +171,6 @@ Parameters::register_parameter("WORLD_HHP_INFECTION-ParasitesStartOnCats", 1.0,
 HHPWorld::HHPWorld(std::shared_ptr<ParametersTable> PT_)
 	: AbstractWorld(PT_) {
 
-	mutationPointCat = mutationPointCatPL->get(PT);
-	mutationSizeCat = mutationSizeCatPL->get(PT);
-	mutationPointDog = mutationPointDogPL->get(PT);
-	mutationSizeDog = mutationSizeDogPL->get(PT);
-	mutationPointFlea = mutationPointFleaPL->get(PT);
-	mutationSizeFlea = mutationSizeFleaPL->get(PT);
 	mutationEraseRate = mutationEraseRatePL->get(PT);
 
 	reproductionThresholdCat = reproductionThresholdCatPL->get(PT);
@@ -195,38 +189,23 @@ HHPWorld::HHPWorld(std::shared_ptr<ParametersTable> PT_)
 	catParasiteInheritance = catParasiteInheritancePL->get(PT);
 	dogParasiteInheritance = dogParasiteInheritancePL->get(PT);
 
-	std::vector<std::string> tempListA;
-	std::vector<std::string> tempListB;
-	convertCSVListToVector(contactRateInSpeciesPL->get(PT),tempListA);
-	for (auto A : tempListA) {
-		convertCSVListToVector(A, tempListB, 'X');
-		std::stringstream t_str(tempListB[0]);
-		int t;
-		t_str >> t;
-		contactRateInSpeciesTimesList.push_back(t);
-		std::stringstream d_str(tempListB[1]);
-		double v;
-		d_str >> v;
-		contactRateInSpeciesList.push_back(v);
-	}
-
-	convertCSVListToVector(contactRateAcrossSpeciesPL->get(PT), tempListA);
-	for (auto A : tempListA) {
-		convertCSVListToVector(A, tempListB, 'X');
-		std::stringstream t_str(tempListB[0]);
-		int t;
-		t_str >> t;
-		contactRateAcrossSpeciesTimesList.push_back(t);
-		std::stringstream d_str(tempListB[1]);
-		double v;
-		d_str >> v;
-		contactRateAcrossSpeciesList.push_back(v);
-	}
-
-
+	convertTemoporalList((std::string)contactRateInSpeciesPL->get(PT), contactRateInSpeciesList, contactRateInSpeciesTimesList);
+	convertTemoporalList((std::string)contactRateAcrossSpeciesPL->get(PT), contactRateAcrossSpeciesList, contactRateAcrossSpeciesTimesList);
 	contactRateInSpecies = contactRateInSpeciesList[0];
 	contactRateAcrossSpecies = contactRateAcrossSpeciesList[0];
 
+	convertTemoporalList((std::string)mutationPointCatPL->get(PT), mutationPointCatList, mutationPointCatTimesList);
+	convertTemoporalList((std::string)mutationSizeCatPL->get(PT), mutationSizeCatList, mutationSizeCatTimesList);
+	convertTemoporalList((std::string)mutationPointDogPL->get(PT), mutationPointDogList, mutationPointDogTimesList);
+	convertTemoporalList((std::string)mutationSizeDogPL->get(PT), mutationSizeDogList, mutationSizeDogTimesList);
+	convertTemoporalList((std::string)mutationPointFleaPL->get(PT), mutationPointFleaList, mutationPointFleaTimesList);
+	convertTemoporalList((std::string)mutationSizeFleaPL->get(PT), mutationSizeFleaList, mutationSizeFleaTimesList);
+	mutationPointCat = mutationPointCatList[0];
+	mutationSizeCat = mutationSizeCatList[0];
+	mutationPointDog = mutationPointDogList[0];
+	mutationSizeDog = mutationSizeDogList[0];
+	mutationPointFlea = mutationPointFleaList[0];
+	mutationSizeFlea = mutationSizeFleaList[0];
 
 	transferRate = transferRatePL->get(PT);
 
@@ -317,7 +296,11 @@ void HHPWorld::birthFlea(std::shared_ptr<Parasite>& parent, std::shared_ptr<Host
 	newFlea->bitstring = parent->bitstring;
 	mutateBitString(newFlea->bitstring,mutationPointFlea, mutationSizeFlea);
 
-	newFlea->bitStringMatch = percentMatch(newFlea->bitstring, parent->bitstring, scoreList);
+	newFlea->bitStringMatch = percentMatch(newFlea->bitstring, host->bitstring, scoreList);
+
+
+
+
 
 	fleaBirths++;
 }
@@ -338,6 +321,7 @@ void HHPWorld::birthCat(std::shared_ptr<Host>& parent, int x, int y, int directi
 	}
 	// make a new mabe offspring org from parent org
 	auto newOrg = parent->org->makeMutatedOffspringFrom(parent->org);
+	//std::cout << "  in birthCat :: update = " << Global::update << " new_org timeOfBrith = " << newOrg->timeOfBirth << std::endl;
 	// place in world in same location at parent with random direction
 	createCat(newOrg, x, y, direction, false);
 	auto newCat = cats.back();
@@ -368,7 +352,7 @@ void HHPWorld::birthDog(std::shared_ptr<Host>& parent, int x, int y, int directi
 	createDog(newOrg, x, y, direction, false);
 	auto newDog = dogs.back();
 	newDog->bitstring = parent->bitstring;
-	mutateBitString(newDog->bitstring, mutationPointCat, mutationSizeDog);
+	mutateBitString(newDog->bitstring, mutationPointDog, mutationSizeDog);
 	jumpFleas(parent, newDog, dogParasiteInheritance);
 
 	dogBirths++;
@@ -509,6 +493,10 @@ void HHPWorld::setupPopulations(std::map<std::string, std::shared_ptr<Group>>& g
 			dogs[orgID]->parasites.back()->bitStringMatch = percentMatch(dogs[orgID]->parasites.back()->bitstring, dogs[orgID]->bitstring, scoreList);
 		}
 	}
+
+	groups["cat::"]->archivist->save_new_orgs_ = true;
+	groups["dog::"]->archivist->save_new_orgs_ = true;
+	groups["flea::"]->archivist->save_new_orgs_ = true;
 }
 
 // given a host group (cats or dogs) 
@@ -799,24 +787,25 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 	int contactRateInSpeciesCounter = 0;
 	int contactRateAcrossSpeciesCounter = 0;
 
+	int mutationPointCatCounter = 0;
+	int mutationSizeCatCounter = 0;
+	int mutationPointDogCounter = 0;
+	int mutationSizeDogCounter = 0;
+	int mutationPointFleaCounter = 0;
+	int mutationSizeFleaCounter = 0;
+
 	// run the evaluation until time runs out...
 	do {
 
-		if (contactRateInSpeciesCounter < contactRateInSpeciesTimesList.size() &&
-			Global::update == contactRateInSpeciesTimesList[contactRateInSpeciesCounter]) {
-			contactRateInSpecies = contactRateInSpeciesList[contactRateInSpeciesCounter];
-			contactRateInSpeciesCounter++;
-			std::cout << "contactRateInSpecies has change to " << contactRateInSpecies << std::endl;
-		}
+		advanceTemporalList(contactRateInSpeciesCounter, contactRateInSpecies, contactRateInSpeciesList, contactRateInSpeciesTimesList);
+		advanceTemporalList(contactRateAcrossSpeciesCounter, contactRateAcrossSpecies, contactRateAcrossSpeciesList, contactRateAcrossSpeciesTimesList);
 
-		if (contactRateAcrossSpeciesCounter < contactRateAcrossSpeciesTimesList.size() &&
-			Global::update == contactRateAcrossSpeciesTimesList[contactRateAcrossSpeciesCounter]) {
-			contactRateAcrossSpecies = contactRateAcrossSpeciesList[contactRateAcrossSpeciesCounter];
-			contactRateAcrossSpeciesCounter++;
-			std::cout << "contactRateAcrossSpecies has change to " << contactRateAcrossSpecies << std::endl;
-		}
-
-
+		advanceTemporalList(mutationPointCatCounter, mutationPointCat, mutationPointCatList, mutationPointCatTimesList);
+		advanceTemporalList(mutationSizeCatCounter, mutationSizeCat, mutationSizeCatList, mutationSizeCatTimesList);
+		advanceTemporalList(mutationPointDogCounter, mutationPointDog, mutationPointDogList, mutationPointDogTimesList);
+		advanceTemporalList(mutationSizeDogCounter, mutationSizeDog, mutationSizeDogList, mutationSizeDogTimesList);
+		advanceTemporalList(mutationPointFleaCounter, mutationPointFlea, mutationPointFleaList, mutationPointFleaTimesList);
+		advanceTemporalList(mutationSizeFleaCounter, mutationSizeFlea, mutationSizeFleaList, mutationSizeFleaTimesList);
 
 		catBirths = 0;
 		dogBirths = 0;
@@ -851,6 +840,104 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 				migrateParasites(world(x, y).hosts, contactRateAcrossSpecies);
 			}
 		}
+
+
+
+		// We need to update the mabe populations (i.e. group["name::"]->population) to remove any
+// orgs that have been added to a kill list. Orgs being killed should have been removed from the world
+// and the host or parasite lists before we get here (or bad things will result).
+// in other worlds, at this point, the world, the hosts (dog,cat) and parasites (flea) lists and
+// the hosts local parasite lists should all be correct.
+// All we should need to do is iterate over these lists and place any orgs we find into their proper populations,
+// and then make sure that kill is called on any orgs that are in host or parasite kill lists.
+
+//std::cout << "           :: clean up mabe populations : cats" << std::endl;
+
+// for each host and parasite group, collect living orgs into new populations
+// swap these with group->population to update population lists
+// iterate over killLists and call kill on mabe organisms so they can be deleted
+// clear killLists so that the hosts and parasites memory can be released.
+		newPop.clear();
+		for (auto host : cats) {
+			newPop.push_back(host->org);
+		}
+		groups["cat::"]->population = newPop;
+
+		//std::cout << "           :: clean up mabe populations : dogs" << std::endl;
+		newPop.clear();
+		for (auto host : dogs) {
+			newPop.push_back(host->org);
+		}
+		groups["dog::"]->population = newPop;
+
+		//std::cout << "           :: clean up mabe populations : fleas" << std::endl;
+		newPop.clear();
+		for (auto parasite : fleas) {
+			newPop.push_back(parasite->org);
+		}
+		groups["flea::"]->population = newPop;
+
+		//std::cout << "           :: killing : cats" << std::endl;
+		// now kill everyone in kill lists so that the memory can be reused
+		for (auto beast : catKillList) {
+			beast->org->kill();
+		}
+		catKillList.clear();
+
+		//std::cout << "           :: killing : dogs" << std::endl;
+		for (auto beast : dogKillList) {
+			beast->org->kill();
+		}
+		dogKillList.clear();
+
+		//std::cout << "           :: killing : fleas" << std::endl;
+		for (auto beast : fleaKillList) {
+			beast->org->kill();
+		}
+		fleaKillList.clear();
+
+		// print a short accounting to terminal
+		std::cout << "finished update: " << Global::update
+			<< "  cat pop size: " << cats.size()
+			<< "  dog pop size: " << dogs.size()
+			<< "  flea pop size: " << fleas.size()
+			<< std::endl;
+
+		std::cout << "Average fleas per cat: " << ave_fleas(cats) << std::endl;
+		std::cout << "Average fleas per dog: " << ave_fleas(dogs) << std::endl;
+
+		if (0) {
+			std::cout << "\ncatCounts:" << std::endl;
+			for (int y = 0; y < worldY; y++) {
+				for (int x = 0; x < worldX; x++) {
+					if (world(x, y).catCount == 0) {
+						std::cout << " " << "  ";
+					}
+					else {
+						std::cout << world(x, y).catCount << "  ";
+					}
+				}
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
+
+			std::cout << "\ndogCounts:" << std::endl;
+			for (int y = 0; y < worldY; y++) {
+				for (int x = 0; x < worldX; x++) {
+					if (world(x, y).dogCount == 0) {
+						std::cout << " " << "  ";
+					}
+					else {
+						std::cout << world(x, y).dogCount << "  ";
+					}
+				}
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
+		}
+
+
+
 		// save image of world
 		// this calls saveWorldImage which is currently written for MultiCellWorld
 		if (recordImageStep > 0 && Global::update % recordImageStep == 0) {
@@ -1084,7 +1171,6 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 		}
 
 		// record population data with archivist
-		//std::cout << "           :: starting archive" << std::endl;
 
 		if (groups["cat::"]->population.size() > 0) {
 			groups["cat::"]->archive();
@@ -1106,99 +1192,6 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 		}
 		//std::cout << "           :: archive done" << std::endl;
 
-
-		// We need to update the mabe populations (i.e. group["name::"]->population) to remove any
-		// orgs that have been added to a kill list. Orgs being killed should have been removed from the world
-		// and the host or parasite lists before we get here (or bad things will result).
-		// in other worlds, at this point, the world, the hosts (dog,cat) and parasites (flea) lists and
-		// the hosts local parasite lists should all be correct.
-		// All we should need to do is iterate over these lists and place any orgs we find into their proper populations,
-		// and then make sure that kill is called on any orgs that are in host or parasite kill lists.
-
-		//std::cout << "           :: clean up mabe populations : cats" << std::endl;
-
-		// for each host and parasite group, collect living orgs into new populations
-		// swap these with group->population to update population lists
-		// iterate over killLists and call kill on mabe organisms so they can be deleted
-		// clear killLists so that the hosts and parasites memory can be released.
-		newPop.clear();
-		for (auto host : cats) {
-			newPop.push_back(host->org);
-		}
-		groups["cat::"]->population = newPop;
-
-		//std::cout << "           :: clean up mabe populations : dogs" << std::endl;
-		newPop.clear();
-		for (auto host : dogs) {
-			newPop.push_back(host->org);
-		}
-		groups["dog::"]->population = newPop;
-
-		//std::cout << "           :: clean up mabe populations : fleas" << std::endl;
-		newPop.clear();
-		for (auto parasite : fleas) {
-			newPop.push_back(parasite->org);
-		}
-		groups["flea::"]->population = newPop;
-
-		//std::cout << "           :: killing : cats" << std::endl;
-		// now kill everyone in kill lists so that the memory can be reused
-		for (auto beast : catKillList) {
-			beast->org->kill();
-		}
-		catKillList.clear();
-
-		//std::cout << "           :: killing : dogs" << std::endl;
-		for (auto beast : dogKillList) {
-			beast->org->kill();
-		}
-		dogKillList.clear();
-
-		//std::cout << "           :: killing : fleas" << std::endl;
-		for (auto beast : fleaKillList) {
-			beast->org->kill();
-		}
-		fleaKillList.clear();
-
-		// print a short accounting to terminal
-		std::cout << "finished update: " << Global::update 
-			<< "  cat pop size: " << cats.size()
-			<< "  dog pop size: " << dogs.size() 
-			<< "  flea pop size: " << fleas.size() 
-			<< std::endl;
-
-		std::cout << "Average fleas per cat: " << ave_fleas(cats) << std::endl;
-		std::cout << "Average fleas per dog: " << ave_fleas(dogs) << std::endl;
-
-		if (0) {
-			std::cout << "\ncatCounts:" << std::endl;
-			for (int y = 0; y < worldY; y++) {
-				for (int x = 0; x < worldX; x++) {
-					if (world(x, y).catCount == 0) {
-						std::cout << " " << "  ";
-					}
-					else {
-						std::cout << world(x, y).catCount << "  ";
-					}
-				}
-				std::cout << std::endl;
-			}
-			std::cout << std::endl;
-
-			std::cout << "\ndogCounts:" << std::endl;
-			for (int y = 0; y < worldY; y++) {
-				for (int x = 0; x < worldX; x++) {
-					if (world(x, y).dogCount == 0) {
-						std::cout << " " << "  ";
-					}
-					else {
-						std::cout << world(x, y).dogCount << "  ";
-					}
-				}
-				std::cout << std::endl;
-			}
-			std::cout << std::endl;
-		}
 		// advance time
 		Global::update++;
 

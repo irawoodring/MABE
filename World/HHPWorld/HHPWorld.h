@@ -36,12 +36,12 @@ public:
 
 
 	static std::shared_ptr < ParameterLink<double>> mutationEraseRatePL;
-	static std::shared_ptr < ParameterLink<double>> mutationPointCatPL;
-	static std::shared_ptr < ParameterLink<double>> mutationSizeCatPL;
-	static std::shared_ptr < ParameterLink<double>> mutationPointDogPL;
-	static std::shared_ptr < ParameterLink<double>> mutationSizeDogPL;
-	static std::shared_ptr < ParameterLink<double>> mutationPointFleaPL;
-	static std::shared_ptr < ParameterLink<double>> mutationSizeFleaPL;
+	static std::shared_ptr < ParameterLink<std::string>> mutationPointCatPL;
+	static std::shared_ptr < ParameterLink<std::string>> mutationSizeCatPL;
+	static std::shared_ptr < ParameterLink<std::string>> mutationPointDogPL;
+	static std::shared_ptr < ParameterLink<std::string>> mutationSizeDogPL;
+	static std::shared_ptr < ParameterLink<std::string>> mutationPointFleaPL;
+	static std::shared_ptr < ParameterLink<std::string>> mutationSizeFleaPL;
 	static std::shared_ptr < ParameterLink<double>> reproductionThresholdCatPL;
 	static std::shared_ptr < ParameterLink<double>> reproductionThresholdDogPL;
 	static std::shared_ptr < ParameterLink<double>> reproductionThresholdFleaPL;
@@ -74,12 +74,6 @@ public:
 
 	double mutationEraseRate;
 
-	double mutationPointCat;
-	double mutationSizeCat;
-	double mutationPointDog;
-	double mutationSizeDog;
-	double mutationPointFlea;
-	double mutationSizeFlea;
 	double reproductionThresholdCat;
 	double reproductionThresholdDog;
 	double reproductionThresholdFlea;
@@ -94,12 +88,40 @@ public:
 	double dogMaxToShareWithFleas;
 
 	double resourceInflow;
+
 	std::vector<double> contactRateInSpeciesList;
-	std::vector<double> contactRateAcrossSpeciesList;
 	std::vector<int> contactRateInSpeciesTimesList;
-	std::vector<int> contactRateAcrossSpeciesTimesList;
 	double contactRateInSpecies;
+
+	std::vector<double> contactRateAcrossSpeciesList;
+	std::vector<int> contactRateAcrossSpeciesTimesList;
 	double contactRateAcrossSpecies;
+
+
+	std::vector<double> mutationPointCatList;
+	std::vector<int> mutationPointCatTimesList;
+	double mutationPointCat;
+
+	std::vector<double> mutationSizeCatList;
+	std::vector<int> mutationSizeCatTimesList;
+	double mutationSizeCat;
+
+	std::vector<double> mutationPointDogList;
+	std::vector<int> mutationPointDogTimesList;
+	double mutationPointDog;
+
+	std::vector<double> mutationSizeDogList;
+	std::vector<int> mutationSizeDogTimesList;
+	double mutationSizeDog;
+
+	std::vector<double> mutationPointFleaList;
+	std::vector<int> mutationPointFleaTimesList;
+	double mutationPointFlea;
+
+	std::vector<double> mutationSizeFleaList;
+	std::vector<int> mutationSizeFleaTimesList;
+	double mutationSizeFlea;
+
 
 	double transferRate;
 
@@ -227,6 +249,33 @@ public:
 
 		int y() { return R; }
 	};
+
+
+	// convert a string with format [Time]X[VALUE],[TIME]X[VALUE],... into two lists valuesList and timesList
+	void convertTemoporalList(std::string inputString, std::vector<double>& valuesList, std::vector<int>& timesList) {
+		std::vector<std::string> tempListA;
+		std::vector<std::string> tempListB;
+		convertCSVListToVector(inputString, tempListA);
+		for (auto A : tempListA) {
+			convertCSVListToVector(A, tempListB, 'X');
+			std::stringstream t_str(tempListB[0]);
+			int t;
+			t_str >> t;
+			timesList.push_back(t);
+			std::stringstream d_str(tempListB[1]);
+			double v;
+			d_str >> v;
+			valuesList.push_back(v);
+		}
+	}
+
+	// given a valuesList, a timeList, a counter, and a value, update value and counter from values and times lists if Global::update says it's time
+	void advanceTemporalList(int& counter, double& value, std::vector<double>& valueList, std::vector<int>& timesList) {
+		if (counter < timesList.size() && Global::update == timesList[counter]) {
+			value = valueList[counter];
+			counter++;
+		}
+	}
 
 	double percentMatch(const std::vector<bool>& key, const std::vector<bool>& lock, std::vector<double>& scores) {
 		int keySize = key.size();
