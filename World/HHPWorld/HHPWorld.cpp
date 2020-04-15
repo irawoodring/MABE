@@ -956,7 +956,11 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 			headerString += "dogCollectedResource,fleaOnDogCollectedResource,dogTheft,";
 			headerString += "infectedDogsRate,";
 			headerString += "bitMatchDog,";
-			headerString += "fleaCollectedResource";
+			headerString += "fleaCollectedResource,";
+			headerString += "infectedFpC,";
+			headerString += "infectedFpD,";
+			headerString += "carrierFleasCat,";
+			headerString += "carrierFleasDog";
 
 
 			std::string dataString = std::to_string(Global::update) + ",";
@@ -984,6 +988,11 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 			double bitMatchDog = 0;
 			double infectedDogs = 0;
 
+			double infectingFpC = 0;
+			double infectingFpD = 0;
+			double carrierFleasDog = 0;
+			double carrierFleasCat = 0;
+
 			if (cats.size() > 0) {
 				double catLockAveSize = 0;
 				for (auto c : cats) {
@@ -992,6 +1001,9 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 						fleaKeyAveSizeOnCats += p->bitstring.size();
 						fleaCountCats++;
 						fleaOnCatCollectedResource += p->collectedResource;
+						if(calcMatch(p->bitstring, c->bitstring) < .30){
+							carrierFleasCat++;
+						}
 					}
 					catCollectedResource += c->collectedResource;
 					catTheft += c->theft;
@@ -1014,6 +1026,9 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 						fleaKeyAveSizeOnDogs += p->bitstring.size();
 						fleaCountDogs++;
 						fleaOnDogCollectedResource += p->collectedResource;
+						if(calcMatch(p->bitstring, d->bitstring) < .30){
+							carrierFleasDog++;
+						}
 					}
 					dogCollectedResource += d->collectedResource;
 					dogTheft += d->theft;
@@ -1106,11 +1121,16 @@ void HHPWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups,
 
 
 			if (fleas.size() > 0) {
-				dataString += std::to_string((fleaOnCatCollectedResource + fleaOnDogCollectedResource) / fleas.size());
+				dataString += std::to_string((fleaOnCatCollectedResource + fleaOnDogCollectedResource) / fleas.size()) + ",";
 			}
 			else {
-				dataString += "-1";
+				dataString += "-1,";
 			}
+			// infected FpC
+			dataString += std::to_string((fleaCountCats - carrierFleasCat) / cats.size()) + ",";
+			dataString += std::to_string((fleaCountDogs - carrierFleasDog) / dogs.size()) + ",";
+			dataString += std::to_string(carrierFleasCat) + ",";
+			dataString += std::to_string(carrierFleasDog);
 
 			FileManager::writeToFile("HHP_Report.csv", dataString, headerString);
 		}

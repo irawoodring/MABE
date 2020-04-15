@@ -277,6 +277,28 @@ public:
 		}
 	}
 
+	double calcMatch(const std::vector<bool>& key, const std::vector<bool>& lock) {
+		int keySize = key.size();
+		int lockSize = lock.size();
+		if (keySize == 0 || keySize < lockSize) {
+			return 0.0;
+		}
+		if (lockSize == 0) {
+			return 0.0;
+		}
+
+		int max = 0;
+
+		for (int kstart = 0; kstart < keySize - (lockSize - 1); ++kstart) {
+			int matches = 0;
+			for (int l = 0; l < lockSize; ++l) {
+				matches += key[kstart + l] == lock[l];
+			}
+			max = std::max(max, matches);
+		}
+		return (double)max / (double)lockSize;
+	}
+
 	double percentMatch(const std::vector<bool>& key, const std::vector<bool>& lock, std::vector<double>& scores) {
 		int keySize = key.size();
 		int lockSize = lock.size();
